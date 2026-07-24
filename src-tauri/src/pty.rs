@@ -43,6 +43,13 @@ impl PtyManager {
         let mut cmd = CommandBuilder::new(&shell);
         cmd.env("TERM", "xterm-256color");
         cmd.env("COLORTERM", "truecolor");
+        // Mosaic is its own terminal, not Apple Terminal. The shell inherits
+        // TERM_SESSION_ID from whatever launched Mosaic, which makes macOS's
+        // /etc/zshrc_Apple_Terminal turn on its save/restore feature and spam
+        // "Restored session:" / "Saving session..." into every new shell.
+        // SHELL_SESSIONS_DISABLE=1 is that script's documented off-switch.
+        cmd.env("SHELL_SESSIONS_DISABLE", "1");
+        cmd.env("TERM_PROGRAM", "mosaic");
         cmd.env("LANG", std::env::var("LANG").unwrap_or_else(|_| "en_US.UTF-8".to_string()));
         // Inherit HOME and USER so the prompt resolves correctly
         if let Ok(home) = std::env::var("HOME") { cmd.env("HOME", home); }

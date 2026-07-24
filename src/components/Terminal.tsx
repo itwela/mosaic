@@ -26,7 +26,16 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
   const [isDragOver, setIsDragOver] = useState(false);
 
   useImperativeHandle(ref, () => ({
-    clear: () => termRef.current?.clear(),
+    clear: () => {
+      const term = termRef.current;
+      if (!term) return;
+      // Drop xterm's scrollback so it looks like a fresh launch...
+      term.clear();
+      // ...then send Ctrl+L (form feed) to the shell itself so it redraws a
+      // clean prompt at the top. Unlike term.clear() alone this reaches the
+      // shell, so it works in any folder and keeps whatever you'd typed.
+      invoke("pty_write", { id, data: "\x0c" }).catch(console.error);
+    },
   }));
 
   useEffect(() => {

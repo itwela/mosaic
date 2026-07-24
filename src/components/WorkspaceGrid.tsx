@@ -32,7 +32,9 @@ export default function WorkspaceGrid({ workspace, onUpdate }: Props) {
 
   function clearAll() {
     for (const panel of panels) {
-      invoke("pty_write", { id: panel.activeTabId, data: "clear\r" }).catch(console.error);
+      // Ctrl+L (form feed) instead of typing "clear\r": it clears the screen in
+      // any folder without executing a command or mangling half-typed input.
+      invoke("pty_write", { id: panel.activeTabId, data: "\x0c" }).catch(console.error);
     }
   }
 
