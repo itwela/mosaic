@@ -1,0 +1,163 @@
+.workspace-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.grid-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.grid-workspace-name {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.grid-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grid-clear-all {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.grid-clear-all:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--surface-2);
+}
+
+.grid-add-panel {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.grid-add-panel:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--stone);
+}
+
+.grid-add-launcher {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-body);
+  padding: 4px 10px;
+  border-radius: 5px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.grid-add-launcher:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--stone);
+}
+
+.grid-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 8px;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+
+.panel-group-v,
+.panel-group-h {
+  height: 100%;
+}
+
+.panel-container {
+  position: relative;
+  height: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.panel-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  line-height: 1;
+  padding: 0;
+}
+
+.panel-container:hover .panel-close-btn {
+  opacity: 1;
+}
+
+.panel-close-btn:hover {
+  color: var(--red);
+  background: var(--surface-2);
+  border-color: var(--red);
+}
+
+.resize-handle-h {
+  height: 6px;
+  background: transparent;
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  border-radius: 3px;
+}
+
+.resize-handle-h:hover,
+.resize-handle-h[data-resize-handle-state="drag"] {
+  background: var(--accent);
+  opacity: 0.3;
+}
+
+.resize-handle-v {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  border-radius: 3px;
+}
+
+.resize-handle-v:hover,
+.resize-handle-v[data-resize-handle-state="drag"] {
+  background: var(--accent);
+  opacity: 0.3;
+}

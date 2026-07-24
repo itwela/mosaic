@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:        #1e1410;
+  --surface:   #2C1F14;
+  --surface-2: #3a2a1a;
+  --stone:     #4a3523;
+  --cream:     #F6F0E6;
+  --cream-dim: #b8a898;
+  --muted:     #7a5c3e;
+  --accent:    #c97d3a;
+  --accent-dk: #a06228;
+  --border:    #3a2a1a;
+  --red:       #c94a3a;
+
+  --font-display: "Jomhuria", serif;
+  --font-body: "DM Sans", sans-serif;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: var(--cream);
+  background: var(--bg);
+}

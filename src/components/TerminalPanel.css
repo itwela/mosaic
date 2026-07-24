@@ -1,0 +1,182 @@
+.terminal-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0e0a07;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 4px;
+  gap: 2px;
+  flex-shrink: 0;
+  min-height: 32px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--cream-dim);
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.tab-item:hover {
+  color: var(--cream);
+  background: var(--surface-2);
+}
+
+.tab-active {
+  color: var(--cream) !important;
+  background: #0e0a07 !important;
+  border: 1px solid var(--border);
+  border-bottom: 1px solid #0e0a07;
+  margin-bottom: -1px;
+}
+
+.tab-title {
+  flex: 1;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-rename-input {
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--cream);
+  font-size: 11px;
+  padding: 1px 4px;
+  width: 80px;
+  outline: none;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tab-close:hover {
+  color: var(--red);
+  background: var(--surface-2);
+}
+
+.tab-add {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 2px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tab-add:hover {
+  color: var(--accent);
+  background: var(--stone);
+}
+
+.tab-bar-spacer {
+  flex: 1;
+}
+
+.clear-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  margin-right: 2px;
+}
+
+.clear-btn:hover {
+  color: var(--red);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+.folder-pin-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  margin-right: 4px;
+}
+
+.folder-pin-btn:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+.folder-pin-active {
+  color: var(--accent) !important;
+  border-color: var(--stone) !important;
+}
+
+.folder-pin-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folder-pin-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.terminal-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminal-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}

@@ -1,0 +1,83 @@
+.about-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.about-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+  padding: 48px 56px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-width: 300px;
+}
+
+.about-logo-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.about-brand {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--cream);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.about-est {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.about-divider {
+  width: 40px;
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 24px;
+}
+
+.about-tagline {
+  font-size: 13px;
+  color: var(--cream-dim);
+  line-height: 1.6;
+  max-width: 220px;
+  margin-bottom: 16px;
+}
+
+.about-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+.about-dot {
+  color: var(--accent);
+  opacity: 0.5;
+}
+
+.about-handle {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}

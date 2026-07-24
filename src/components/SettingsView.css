@@ -1,0 +1,117 @@
+.settings-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.settings-card {
+  padding: 44px 52px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 480px;
+}
+
+.settings-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.settings-title {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  color: var(--cream);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-bottom: 36px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.settings-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-row-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cream);
+}
+
+.settings-row-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Toggle switch ───────────────────────────────── */
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: none;
+  background: var(--stone);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.toggle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toggle-on {
+  background: var(--accent);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cream);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.toggle-on .toggle-thumb {
+  transform: translateX(18px);
+}

@@ -1,0 +1,359 @@
+.sidebar {
+  width: 180px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0 12px;
+  user-select: none;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo-mark {
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--cream);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 0 16px 8px;
+}
+
+.workspace-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.workspace-list::-webkit-scrollbar {
+  display: none;
+}
+
+.workspace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--cream-dim);
+  transition: background 0.15s, color 0.15s;
+}
+
+.workspace-item:hover {
+  background: var(--surface-2);
+  color: var(--cream);
+}
+
+.workspace-item:hover .workspace-actions {
+  opacity: 1;
+}
+
+.workspace-active {
+  background: var(--stone) !important;
+  color: var(--accent) !important;
+}
+
+.workspace-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-rename-input {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--cream);
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+  width: 100%;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ws-action {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ws-action:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+
+.ws-delete:hover {
+  color: var(--red) !important;
+  background: var(--surface-2) !important;
+}
+
+.add-workspace-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 8px 16px;
+  text-align: left;
+  margin: 8px 8px 0;
+  border-radius: 6px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.add-workspace-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--stone);
+}
+
+/* ── Upcoming panel ─────────────────────────────── */
+
+.sidebar-upcoming {
+  margin: 10px 8px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.upcoming-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.upcoming-add-btn {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+
+.upcoming-add-btn:hover {
+  color: var(--accent);
+}
+
+.upcoming-empty {
+  font-size: 10px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 2px 0 4px;
+}
+
+.upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--cream-dim);
+}
+
+.upcoming-done .upcoming-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.upcoming-check {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cream-dim);
+  font-size: 10px;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.upcoming-check:hover {
+  color: var(--accent);
+}
+
+.upcoming-done .upcoming-check {
+  color: var(--accent);
+}
+
+.upcoming-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upcoming-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: transparent;
+  font-size: 13px;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.upcoming-item:hover .upcoming-remove {
+  color: var(--muted);
+}
+
+.upcoming-remove:hover {
+  color: var(--red) !important;
+}
+
+.upcoming-input {
+  width: 100%;
+  margin-top: 5px;
+  background: var(--stone);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--cream);
+  font-size: 11px;
+  padding: 4px 7px;
+  outline: none;
+}
+
+/* ── Settings button ────────────────────────────── */
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 8px 16px 2px;
+  text-align: left;
+  width: 100%;
+  transition: color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.settings-btn:hover {
+  color: var(--cream);
+}
+
+/* ── Help button ────────────────────────────────── */
+
+.help-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 8px 16px 2px;
+  text-align: left;
+  width: 100%;
+  transition: color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.help-btn:hover {
+  color: var(--cream);
+}
+
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--cream-dim);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.help-btn:hover .help-icon {
+  border-color: var(--cream);
+}
+
+/* ── About button ───────────────────────────────── */
+
+.about-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 10px 16px 4px;
+  text-align: left;
+  width: 100%;
+  transition: color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.about-btn:hover {
+  color: var(--cream);
+}
+
+.about-btn-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
