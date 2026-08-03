@@ -16,13 +16,40 @@ export interface TerminalHandle {
   clear: () => void;
 }
 
+// Where the pointer was when a file was dragged, in CSS pixels relative to the
+// webview. Tauri types this as a physical position, but on macOS wry reports
+// AppKit points, which already match CSS pixels; Windows and Linux report real
+// device pixels. Only scale on the platforms where the value really is physical.
+function toClientPoint(position: { x: number; y: number }) {
+  const scale = navigator.userAgent.includes("Mac") ? 1 : window.devicePixelRatio || 1;
+  return { x: position.x / scale, y: position.y / scale };
+}
+
+function isPointInside(el: HTMLElement | null, position: { x: number; y: number }) {
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  // A background tab is display:none, so it has no box and can't be a target.
+  if (rect.width === 0 || rect.height === 0) return false;
+  const { x, y } = toClientPoint(position);
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+// Match what a normal terminal does with a dropped file: hand the shell a path
+// it can actually run, quoting only when the path has something the shell would
+// otherwise interpret.
+function quoteForShell(path: string) {
+  return /^[A-Za-z0-9_./@%+:,=-]+$/.test(path)
+    ? path
+    : `'${path.replace(/'/g, "'\\''")}'`;
+}
+
 const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, active, cwd }, ref) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const mountedRef = useRef(false);
   const prevCwdRef = useRef<string | undefined>(cwd);
-  const dragOverRef = useRef(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -100,18 +127,34 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       term.write("\r\n\x1b[31m[process exited]\x1b[0m\r\n");
     }).then((fn) => { unlisten2 = fn; });
 
+    // Tauri swallows native file drags before the webview sees them, so the
+    // HTML5 dragover/drop events never fire for files and this window-level
+    // event is the only signal we get. It's broadcast to every open terminal,
+    // so each one hit-tests the pointer against its own box and only the
+    // terminal actually under the cursor reacts.
     getCurrentWindow().onDragDropEvent((event) => {
-      if (event.payload.type === "drop" && dragOverRef.current) {
-        const paths: string[] = (event.payload as { type: string; paths: string[] }).paths;
-        const text = paths.map((p) => p.includes(" ") ? `"${p}"` : p).join(" ");
-        invoke("pty_write", { id, data: text }).catch(console.error);
-        dragOverRef.current = false;
+      const payload = event.payload;
+
+      if (payload.type === "leave") {
         setIsDragOver(false);
+        return;
       }
-      if (event.payload.type === "leave") {
-        dragOverRef.current = false;
-        setIsDragOver(false);
+
+      const over = isPointInside(rootRef.current, payload.position);
+
+      if (payload.type === "enter" || payload.type === "over") {
+        setIsDragOver(over);
+        return;
       }
+
+      // drop
+      setIsDragOver(false);
+      if (!over) return;
+      const text = payload.paths.map(quoteForShell).join(" ");
+      if (!text) return;
+      // Trailing space so the next thing typed doesn't glue onto the path.
+      invoke("pty_write", { id, data: `${text} ` }).catch(console.error);
+      term.focus();
     }).then((fn) => { unlisten3 = fn; });
 
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -180,22 +223,14 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     }
   }, [active, id]);
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    dragOverRef.current = true;
-    setIsDragOver(true);
-  }
-
-  function handleDragLeave() {
-    dragOverRef.current = false;
-    setIsDragOver(false);
-  }
-
   return (
     <div
+      ref={rootRef}
       style={{ width: "100%", height: "100%", position: "relative" }}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      // Files are handled by the Tauri drag-drop event above; these only stop
+      // the webview from navigating away if something else (a URL, a text
+      // selection) gets dropped on the terminal.
+      onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => e.preventDefault()}
     >
       <div
