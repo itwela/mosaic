@@ -95,7 +95,11 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       fontSize: 13,
       lineHeight: 1.4,
       cursorBlink: true,
-      allowTransparency: true,
+      // Deliberately NOT allowTransparency. Nothing here is actually see-through
+      // — the theme background, .terminal-panel and the Tauri window are all the
+      // same opaque #0e0a07 — but the flag makes xterm stop painting opaque row
+      // backgrounds, and WebKit then leaves stale glyph pixels behind whenever
+      // the buffer scrolls. That's the garbling that only a full repaint clears.
     });
 
     const fit = new FitAddon();
