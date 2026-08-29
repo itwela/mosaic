@@ -1,18 +1,21 @@
 import { useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { open } from "@tauri-apps/plugin-dialog";
-import { Panel, Tab } from "../types";
+import { Panel, SavedCommand, Tab } from "../types";
 import Terminal, { TerminalHandle } from "./Terminal";
+import CommandToolbox from "./CommandToolbox";
 import "./TerminalPanel.css";
 
 interface Props {
   panel: Panel;
   onUpdate: (panel: Panel) => void;
+  onClosePanel: () => void;
 }
 
-export default function TerminalPanel({ panel, onUpdate }: Props) {
+export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) {
   const activeTab = panel.tabs.find((t) => t.id === panel.activeTabId) ?? panel.tabs[0];
   const termRefs = useRef<Map<string, TerminalHandle>>(new Map());
+  const [toolboxOpen, setToolboxOpen] = useState(false);
 
   function clearActiveTerminal() {
     termRefs.current.get(activeTab.id)?.clear();
@@ -48,6 +51,26 @@ export default function TerminalPanel({ panel, onUpdate }: Props) {
     });
   }
 
+  function addSavedCommand(cmd: SavedCommand) {
+    onUpdate({
+      ...panel,
+      tabs: panel.tabs.map((t) =>
+        t.id === activeTab.id ? { ...t, savedCommands: [...(t.savedCommands ?? []), cmd] } : t
+      ),
+    });
+  }
+
+  function deleteSavedCommand(id: string) {
+    onUpdate({
+      ...panel,
+      tabs: panel.tabs.map((t) =>
+        t.id === activeTab.id
+          ? { ...t, savedCommands: (t.savedCommands ?? []).filter((c) => c.id !== id) }
+          : t
+      ),
+    });
+  }
+
   async function pickFolder() {
     const selected = await open({ directory: true, multiple: false });
     if (typeof selected === "string" && selected) {
@@ -78,6 +101,18 @@ export default function TerminalPanel({ panel, onUpdate }: Props) {
         </button>
         <div className="tab-bar-spacer" />
         <button
+          className="toolbox-btn"
+          onClick={() => setToolboxOpen(true)}
+          title="Command toolbox"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" />
+            <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
+            <path d="M2 13h20" />
+            <path d="M10 13v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2" />
+          </svg>
+        </button>
+        <button
           className="clear-btn"
           onClick={clearActiveTerminal}
           title="Clear terminal"
@@ -96,14 +131,24 @@ export default function TerminalPanel({ panel, onUpdate }: Props) {
           {shortPath ? (
             <span className="folder-pin-label">
               <span className="folder-pin-icon">⌂</span>
-              {shortPath}
+              <span className="folder-pin-text">{shortPath}</span>
             </span>
           ) : (
             <span className="folder-pin-label">
               <span className="folder-pin-icon">⌂</span>
-              set folder
+              <span className="folder-pin-text">set folder</span>
             </span>
           )}
+        </button>
+        <button
+          className="tab-bar-close-btn"
+          onClick={onClosePanel}
+          title="Close panel"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
         </button>
       </div>
       <div className="terminal-body">
@@ -125,6 +170,15 @@ export default function TerminalPanel({ panel, onUpdate }: Props) {
           </div>
         ))}
       </div>
+      {toolboxOpen && (
+        <CommandToolbox
+          tabTitle={activeTab.title}
+          commands={activeTab.savedCommands ?? []}
+          onClose={() => setToolboxOpen(false)}
+          onAdd={addSavedCommand}
+          onDelete={deleteSavedCommand}
+        />
+      )}
     </div>
   );
 }

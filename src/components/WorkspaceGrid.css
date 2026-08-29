@@ -100,38 +100,6 @@
   box-sizing: border-box;
 }
 
-.panel-close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 14px;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
-  line-height: 1;
-  padding: 0;
-}
-
-.panel-container:hover .panel-close-btn {
-  opacity: 1;
-}
-
-.panel-close-btn:hover {
-  color: var(--red);
-  background: var(--surface-2);
-  border-color: var(--red);
-}
-
 .resize-handle-h {
   height: 6px;
   background: transparent;

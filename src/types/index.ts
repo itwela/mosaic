@@ -1,7 +1,14 @@
+export interface SavedCommand {
+  id: string;
+  label?: string;
+  text: string;
+}
+
 export interface Tab {
   id: string;
   title: string;
   cwd?: string;
+  savedCommands?: SavedCommand[];
 }
 
 export interface LaunchItem {

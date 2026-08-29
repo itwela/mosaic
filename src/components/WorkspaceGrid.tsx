@@ -78,16 +78,9 @@ export default function WorkspaceGrid({ workspace, onUpdate }: Props) {
                       {ci > 0 && <Separator className="resize-handle-v" />}
                       <Panel minSize={10}>
                         <div className="panel-container">
-                          <button
-                            className="panel-close-btn"
-                            title="Close panel"
-                            onClick={() => removePanel(panel.id)}
-                          >
-                            ×
-                          </button>
                           {panel.type === "launcher"
-                            ? <LauncherPanel panel={panel} onUpdate={updatePanel} />
-                            : <TerminalPanel panel={panel} onUpdate={updatePanel} />
+                            ? <LauncherPanel panel={panel} onUpdate={updatePanel} onClosePanel={() => removePanel(panel.id)} />
+                            : <TerminalPanel panel={panel} onUpdate={updatePanel} onClosePanel={() => removePanel(panel.id)} />
                           }
                         </div>
                       </Panel>

@@ -175,6 +175,7 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![])))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(AppState { pty_manager })
         .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview])
         .run(tauri::generate_context!())

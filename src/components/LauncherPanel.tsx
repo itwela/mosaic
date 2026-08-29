@@ -10,9 +10,12 @@ interface AppEntry {
   path: string;
 }
 
+type SortMode = "none" | "name-asc" | "name-desc" | "type";
+
 interface Props {
   panel: Panel;
   onUpdate: (panel: Panel) => void;
+  onClosePanel: () => void;
 }
 
 const EXT_COLORS: Record<string, string> = {
@@ -46,11 +49,13 @@ function ExtBadge({ path }: { path: string }) {
   );
 }
 
-export default function LauncherPanel({ panel, onUpdate }: Props) {
+export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) {
   const items = panel.launchItems ?? [];
   const [pickerOpen, setPickerOpen] = useState(false);
   const [appList, setAppList] = useState<AppEntry[]>([]);
   const [search, setSearch] = useState("");
+  const [itemSearch, setItemSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("none");
   const [launching, setLaunching] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [previews, setPreviews] = useState<Record<string, string | null>>({});
@@ -180,6 +185,32 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
     ? appList.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
     : appList;
 
+  function toggleSort(mode: SortMode) {
+    setSortMode((cur) => (cur === mode ? "none" : mode));
+  }
+
+  const visibleItems = (() => {
+    let list = items;
+    const q = itemSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (i) => i.name.toLowerCase().includes(q) || i.path.toLowerCase().includes(q)
+      );
+    }
+    if (sortMode === "name-asc") {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === "name-desc") {
+      list = [...list].sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortMode === "type") {
+      list = [...list].sort((a, b) => {
+        const ka = a.kind ?? "file";
+        const kb = b.kind ?? "file";
+        return ka !== kb ? ka.localeCompare(kb) : a.name.localeCompare(b.name);
+      });
+    }
+    return list;
+  })();
+
   return (
     <div className="launcher-panel">
       <div className="launcher-header">
@@ -197,6 +228,12 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
               {launching ? "Launching..." : "Launch All"}
             </button>
           )}
+          <button className="launcher-panel-close-btn" onClick={onClosePanel} title="Close panel">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -230,6 +267,51 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
         </div>
       )}
 
+      {items.length > 0 && (
+        <div className="launcher-toolbar">
+          <div className="launcher-search-wrap">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="launcher-search-icon">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              className="launcher-search-input"
+              placeholder="Search..."
+              value={itemSearch}
+              onChange={(e) => setItemSearch(e.target.value)}
+            />
+            {itemSearch && (
+              <button className="launcher-search-clear" onClick={() => setItemSearch("")} title="Clear search">
+                ×
+              </button>
+            )}
+          </div>
+          <div className="launcher-sort-group">
+            <button
+              className={`launcher-sort-btn ${sortMode === "name-asc" ? "launcher-sort-active" : ""}`}
+              onClick={() => toggleSort("name-asc")}
+              title="Sort A to Z"
+            >
+              A–Z
+            </button>
+            <button
+              className={`launcher-sort-btn ${sortMode === "name-desc" ? "launcher-sort-active" : ""}`}
+              onClick={() => toggleSort("name-desc")}
+              title="Sort Z to A"
+            >
+              Z–A
+            </button>
+            <button
+              className={`launcher-sort-btn ${sortMode === "type" ? "launcher-sort-active" : ""}`}
+              onClick={() => toggleSort("type")}
+              title="Group by type"
+            >
+              Type
+            </button>
+          </div>
+        </div>
+      )}
+
       {errors.length > 0 && (
         <div className="launcher-errors">
           {errors.map((e, i) => (
@@ -252,9 +334,13 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
             <p>Nothing here yet.</p>
             <p>Add files, apps, or URLs to open together.</p>
           </div>
+        ) : visibleItems.length === 0 ? (
+          <div className="launcher-empty">
+            <p>No matches for "{itemSearch}"</p>
+          </div>
         ) : (
           <div className="launcher-grid">
-            {items.map((item) => (
+            {visibleItems.map((item) => (
               editingId === item.id ? (
                 <div key={item.id} className="launcher-card launcher-card-editing">
                   <div className="launcher-card-edit-fields">
@@ -325,7 +411,12 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
                   </button>
-                  <button className="launcher-card-remove" onClick={() => removeItem(item.id)} title="Remove">×</button>
+                  <button className="launcher-card-remove" onClick={() => removeItem(item.id)} title="Remove">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               )
@@ -339,7 +430,12 @@ export default function LauncherPanel({ panel, onUpdate }: Props) {
           <div className="app-picker" onClick={(e) => e.stopPropagation()}>
             <div className="app-picker-header">
               <span>Choose an app</span>
-              <button className="app-picker-close" onClick={() => setPickerOpen(false)}>×</button>
+              <button className="app-picker-close" onClick={() => setPickerOpen(false)}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
             </div>
             <input
               className="app-picker-search"

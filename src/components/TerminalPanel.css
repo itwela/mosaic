@@ -109,6 +109,27 @@
   flex: 1;
 }
 
+.toolbox-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  margin-right: 2px;
+}
+
+.toolbox-btn:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
 .clear-btn {
   background: none;
   border: 1px solid transparent;
@@ -139,7 +160,10 @@
   padding: 3px 8px;
   border-radius: 5px;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 26px;
+  max-width: 160px;
+  overflow: hidden;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   margin-right: 4px;
 }
@@ -159,14 +183,40 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  max-width: 160px;
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .folder-pin-icon {
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.folder-pin-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-bar-close-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.panel-close-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--surface-2);
 }
 
 .terminal-body {
