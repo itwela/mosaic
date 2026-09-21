@@ -207,7 +207,7 @@ export default function Sidebar({
       <input
         ref={importInputRef}
         type="file"
-        accept=".json,.mosaic.json,application/json"
+        accept=".zip,.mosaic.zip,.json,.mosaic.json,application/zip,application/json"
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0];

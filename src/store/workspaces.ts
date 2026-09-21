@@ -5,9 +5,16 @@ const STORAGE_KEY = "mosaic-workspaces";
 
 export interface WorkspaceBundle {
   format: "mosaic-workspace";
-  version: 1;
+  version: 2;
   exportedAt: string;
   workspace: Workspace;
+  embeddedFiles?: EmbeddedFile[];
+}
+
+export interface EmbeddedFile {
+  originalPath: string;
+  name: string;
+  data: string;
 }
 
 export function makeTab(title = "shell"): Tab {
@@ -46,19 +53,20 @@ export function freshIds(ws: Workspace): Workspace {
   };
 }
 
-export function createWorkspaceBundle(workspace: Workspace): WorkspaceBundle {
+export function createWorkspaceBundle(workspace: Workspace, embeddedFiles: EmbeddedFile[] = []): WorkspaceBundle {
   return {
     format: "mosaic-workspace",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     workspace,
+    embeddedFiles,
   };
 }
 
 export function parseWorkspaceBundle(raw: unknown): Workspace {
   if (!raw || typeof raw !== "object") throw new Error("This file is not a Mosaic workspace.");
   const bundle = raw as Partial<WorkspaceBundle>;
-  if (bundle.format !== "mosaic-workspace" || bundle.version !== 1 || !bundle.workspace) {
+  if (bundle.format !== "mosaic-workspace" || ![1, 2].includes(bundle.version ?? 0) || !bundle.workspace) {
     throw new Error("This file is not a compatible Mosaic workspace export.");
   }
 

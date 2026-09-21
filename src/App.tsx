@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import JSZip from "jszip";
 import Sidebar from "./components/Sidebar";
 import WorkspaceGrid from "./components/WorkspaceGrid";
 import AboutView from "./components/AboutView";
 import HelpView from "./components/HelpView";
 import SettingsView from "./components/SettingsView";
 import { Workspace } from "./types";
-import { createWorkspaceBundle, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces } from "./store/workspaces";
+import { createWorkspaceBundle, EmbeddedFile, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces } from "./store/workspaces";
 import "./App.css";
 
 type View = "workspace" | "about" | "help" | "settings";
@@ -38,21 +40,54 @@ export default function App() {
     if (activeId === id) setActiveId(remaining[0].id);
   }
 
-  function exportWorkspace(ws: Workspace) {
-    const blob = new Blob([JSON.stringify(createWorkspaceBundle(ws), null, 2)], { type: "application/json" });
+  async function exportWorkspace(ws: Workspace) {
+    const paths = [...new Set(ws.panels.flatMap((panel) =>
+      (panel.launchItems ?? []).filter((item) => item.kind !== "url").map((item) => item.path)
+    ))];
+    const embeddedFiles: EmbeddedFile[] = [];
+    for (const path of paths) {
+      try {
+        const result = await invoke<{ name: string; data: string } | null>("read_file_for_export", { path });
+        if (result) embeddedFiles.push({ originalPath: path, ...result });
+      } catch { /* inaccessible apps/directories stay path-based */ }
+    }
+    const zip = new JSZip();
+    zip.file("workspace.json", JSON.stringify(createWorkspaceBundle(ws, embeddedFiles), null, 2));
+    const blob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${ws.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mosaic-workspace"}.mosaic.json`;
+    link.download = `${ws.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mosaic-workspace"}.mosaic.zip`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
   function importWorkspace(file: File) {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        const imported = parseWorkspaceBundle(JSON.parse(String(reader.result)));
+        let raw: any;
+        if (file.name.toLowerCase().endsWith(".zip")) {
+          const zip = await JSZip.loadAsync(reader.result as ArrayBuffer);
+          const workspaceFile = zip.file("workspace.json");
+          if (!workspaceFile) throw new Error("This archive does not contain a Mosaic workspace.");
+          raw = JSON.parse(await workspaceFile.async("string"));
+        } else {
+          raw = JSON.parse(String(reader.result));
+        }
+        const imported = parseWorkspaceBundle(raw);
+        const embeddedFiles = Array.isArray(raw.embeddedFiles) ? raw.embeddedFiles : [];
+        if (embeddedFiles.length) {
+          const restored = await Promise.all(embeddedFiles.map(async (file: EmbeddedFile) => {
+            const path = await invoke<string>("restore_exported_file", { workspaceName: imported.name, name: file.name, data: file.data });
+            return [file.originalPath, path] as const;
+          }));
+          const pathMap = new Map<string, string>(restored);
+          imported.panels = imported.panels.map((panel) => ({
+            ...panel,
+            launchItems: panel.launchItems?.map((item) => ({ ...item, path: pathMap.get(item.path) ?? item.path })),
+          }));
+        }
         const duplicateCount = workspaces.filter((ws) => ws.name === imported.name).length;
         const workspace = duplicateCount ? { ...imported, name: `${imported.name} (${duplicateCount + 1})` } : imported;
         setWorkspaces((prev) => [...prev, workspace]);
@@ -63,7 +98,8 @@ export default function App() {
       }
     };
     reader.onerror = () => window.alert("Could not read that workspace file.");
-    reader.readAsText(file);
+    if (file.name.toLowerCase().endsWith(".zip")) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
   }
 
   function toggleView(v: View) {

@@ -132,6 +132,39 @@ async fn get_file_preview(path: String) -> Result<Option<String>, String> {
     Ok(None)
 }
 
+#[derive(serde::Serialize)]
+struct ExportedFile {
+    name: String,
+    data: String,
+}
+
+#[tauri::command]
+fn read_file_for_export(path: String) -> Result<Option<ExportedFile>, String> {
+    use base64::Engine;
+    let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+    if !metadata.is_file() || metadata.len() > 25 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let name = std::path::Path::new(&path)
+        .file_name().and_then(|n| n.to_str()).unwrap_or("file")
+        .to_string();
+    let data = base64::engine::general_purpose::STANDARD.encode(std::fs::read(&path).map_err(|e| e.to_string())?);
+    Ok(Some(ExportedFile { name, data }))
+}
+
+#[tauri::command]
+fn restore_exported_file(workspace_name: String, name: String, data: String) -> Result<String, String> {
+    use base64::Engine;
+    let safe_workspace = workspace_name.chars().map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect::<String>();
+    let safe_name = std::path::Path::new(&name).file_name().and_then(|n| n.to_str()).unwrap_or("file");
+    let root = dirs::home_dir().ok_or("Could not locate the home directory")?.join("Mosaic Workspaces").join(safe_workspace);
+    std::fs::create_dir_all(&root).map_err(|e| e.to_string())?;
+    let path = root.join(safe_name);
+    let bytes = base64::engine::general_purpose::STANDARD.decode(data).map_err(|e| e.to_string())?;
+    std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 async fn open_path(path: String) -> Result<(), String> {
     std::process::Command::new("open")
@@ -177,7 +210,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(AppState { pty_manager })
-        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview])
+        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
