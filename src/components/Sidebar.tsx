@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Workspace } from "../types";
 import { makeWorkspace } from "../store/workspaces";
 import "./Sidebar.css";
@@ -25,6 +25,8 @@ interface Props {
   onAdd: (ws: Workspace) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
+  onExport: (ws: Workspace) => void;
+  onImport: (file: File) => void;
   onSettings: () => void;
   onHelp: () => void;
   onAbout: () => void;
@@ -37,6 +39,8 @@ export default function Sidebar({
   onAdd,
   onRename,
   onDelete,
+  onExport,
+  onImport,
   onSettings,
   onHelp,
   onAbout,
@@ -46,6 +50,7 @@ export default function Sidebar({
   const [upcoming, setUpcoming] = useState<UpcomingItem[]>(loadUpcoming);
   const [addingTask, setAddingTask] = useState(false);
   const [newTask, setNewTask] = useState("");
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   function saveUpcoming(items: UpcomingItem[]) {
     setUpcoming(items);
@@ -123,6 +128,13 @@ export default function Sidebar({
                 <div className="workspace-actions">
                   <button
                     className="ws-action"
+                    title="Export workspace"
+                    onClick={(e) => { e.stopPropagation(); onExport(ws); }}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    className="ws-action"
                     title="Rename"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -190,6 +202,21 @@ export default function Sidebar({
 
       <button className="add-workspace-btn" onClick={handleAdd}>
         + New workspace
+      </button>
+
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,.mosaic.json,application/json"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onImport(file);
+          e.target.value = "";
+        }}
+      />
+      <button className="import-workspace-btn" onClick={() => importInputRef.current?.click()}>
+        ↑ Import workspace
       </button>
 
       <button className="settings-btn" onClick={onSettings}>

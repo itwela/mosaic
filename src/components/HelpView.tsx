@@ -13,6 +13,10 @@ const concepts = [
     label: "Tabs",
     desc: "Each panel holds multiple tabs. Stack related sessions inside one pane so things stay grouped.",
   },
+  {
+    label: "Portable workspaces",
+    desc: "Use the down-arrow beside a workspace to export its layout, terminals, tabs, and launcher shortcuts. Import the .mosaic.json file on another computer to add it there.",
+  },
 ];
 
 export default function HelpView() {
@@ -46,7 +50,8 @@ export default function HelpView() {
 
         <p className="help-footer">
           Everything saves automatically. Close it, reopen it and your
-          workspaces are exactly where you left them.
+          workspaces are exactly where you left them. Exported workspaces
+          are portable JSON files you can copy between computers.
         </p>
       </div>
     </div>

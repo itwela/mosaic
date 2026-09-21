@@ -5,7 +5,7 @@ import AboutView from "./components/AboutView";
 import HelpView from "./components/HelpView";
 import SettingsView from "./components/SettingsView";
 import { Workspace } from "./types";
-import { loadWorkspaces, saveWorkspaces } from "./store/workspaces";
+import { createWorkspaceBundle, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces } from "./store/workspaces";
 import "./App.css";
 
 type View = "workspace" | "about" | "help" | "settings";
@@ -38,6 +38,34 @@ export default function App() {
     if (activeId === id) setActiveId(remaining[0].id);
   }
 
+  function exportWorkspace(ws: Workspace) {
+    const blob = new Blob([JSON.stringify(createWorkspaceBundle(ws), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${ws.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mosaic-workspace"}.mosaic.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importWorkspace(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = parseWorkspaceBundle(JSON.parse(String(reader.result)));
+        const duplicateCount = workspaces.filter((ws) => ws.name === imported.name).length;
+        const workspace = duplicateCount ? { ...imported, name: `${imported.name} (${duplicateCount + 1})` } : imported;
+        setWorkspaces((prev) => [...prev, workspace]);
+        setActiveId(workspace.id);
+        setView("workspace");
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : "Could not import that workspace.");
+      }
+    };
+    reader.onerror = () => window.alert("Could not read that workspace file.");
+    reader.readAsText(file);
+  }
+
   function toggleView(v: View) {
     setView((cur) => (cur === v ? "workspace" : v));
   }
@@ -51,6 +79,8 @@ export default function App() {
         onAdd={addWorkspace}
         onRename={renameWorkspace}
         onDelete={deleteWorkspace}
+        onExport={exportWorkspace}
+        onImport={importWorkspace}
         onAbout={() => toggleView("about")}
         onHelp={() => toggleView("help")}
         onSettings={() => toggleView("settings")}

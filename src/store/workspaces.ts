@@ -3,6 +3,13 @@ import { Panel, Tab, Workspace } from "../types";
 
 const STORAGE_KEY = "mosaic-workspaces";
 
+export interface WorkspaceBundle {
+  format: "mosaic-workspace";
+  version: 1;
+  exportedAt: string;
+  workspace: Workspace;
+}
+
 export function makeTab(title = "shell"): Tab {
   return { id: uuidv4(), title };
 }
@@ -26,7 +33,7 @@ export function makeWorkspace(name: string, panelCount = 4): Workspace {
   };
 }
 
-function freshIds(ws: Workspace): Workspace {
+export function freshIds(ws: Workspace): Workspace {
   return {
     ...ws,
     panels: ws.panels.map((panel) => {
@@ -37,6 +44,30 @@ function freshIds(ws: Workspace): Workspace {
       return { ...panel, id: uuidv4(), tabs, activeTabId: tabs[0].id };
     }),
   };
+}
+
+export function createWorkspaceBundle(workspace: Workspace): WorkspaceBundle {
+  return {
+    format: "mosaic-workspace",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    workspace,
+  };
+}
+
+export function parseWorkspaceBundle(raw: unknown): Workspace {
+  if (!raw || typeof raw !== "object") throw new Error("This file is not a Mosaic workspace.");
+  const bundle = raw as Partial<WorkspaceBundle>;
+  if (bundle.format !== "mosaic-workspace" || bundle.version !== 1 || !bundle.workspace) {
+    throw new Error("This file is not a compatible Mosaic workspace export.");
+  }
+
+  const workspace = bundle.workspace;
+  if (typeof workspace.name !== "string" || !Array.isArray(workspace.panels) || !Array.isArray(workspace.layout)) {
+    throw new Error("The workspace export is missing required layout data.");
+  }
+
+  return freshIds(workspace);
 }
 
 export function loadWorkspaces(): Workspace[] {
