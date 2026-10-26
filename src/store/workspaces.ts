@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import { Panel, Tab, Workspace } from "../types";
+import { LaunchItem, Panel, Tab, Workspace } from "../types";
+import { insertAt } from "./undo";
 
 const STORAGE_KEY = "mosaic-workspaces";
 
@@ -30,6 +31,10 @@ export function makeLauncherPanel(): Panel {
   return { id: uuidv4(), type: "launcher", tabs: [], activeTabId: "", launchItems: [] };
 }
 
+export function makeUsagePanel(): Panel {
+  return { id: uuidv4(), type: "usage", tabs: [], activeTabId: "" };
+}
+
 export function makeWorkspace(name: string, panelCount = 4): Workspace {
   const panels = Array.from({ length: panelCount }, makePanel);
   return {
@@ -44,7 +49,7 @@ export function freshIds(ws: Workspace): Workspace {
   return {
     ...ws,
     panels: ws.panels.map((panel) => {
-      if (panel.type === "launcher") {
+      if (panel.type === "launcher" || panel.tabs.length === 0) {
         return { ...panel, id: uuidv4() };
       }
       const tabs = panel.tabs.map((tab) => ({ ...tab, id: uuidv4() }));
@@ -93,4 +98,33 @@ export function loadWorkspaces(): Workspace[] {
 
 export function saveWorkspaces(workspaces: Workspace[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+}
+
+// Undo restores run long after the component that deleted something rendered,
+// so they go through App's state setter instead of a stale `onUpdate` closure.
+type WorkspacesUpdater = (fn: (ws: Workspace[]) => Workspace[]) => void;
+let mutator: WorkspacesUpdater | null = null;
+
+export function setWorkspaceMutator(m: WorkspacesUpdater | null) {
+  mutator = m;
+}
+
+function mapPanel(panelId: string, fn: (p: Panel) => Panel) {
+  mutator?.((wss) => wss.map((w) =>
+    w.panels.some((p) => p.id === panelId)
+      ? { ...w, panels: w.panels.map((p) => (p.id === panelId ? fn(p) : p)) }
+      : w
+  ));
+}
+
+export function restorePanel(workspaceId: string, index: number, panel: Panel) {
+  mutator?.((wss) => wss.map((w) => (w.id === workspaceId ? { ...w, panels: insertAt(w.panels, index, panel) } : w)));
+}
+
+export function restoreTab(panelId: string, index: number, tab: Tab) {
+  mapPanel(panelId, (p) => ({ ...p, tabs: insertAt(p.tabs, index, tab), activeTabId: tab.id }));
+}
+
+export function restoreLaunchItem(panelId: string, index: number, item: LaunchItem) {
+  mapPanel(panelId, (p) => ({ ...p, launchItems: insertAt(p.launchItems ?? [], index, item) }));
 }

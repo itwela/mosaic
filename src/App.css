@@ -43,3 +43,48 @@ body,
   color: var(--cream);
   background: var(--bg);
 }
+
+/* ── Shared panel drag grip ────────────────────── */
+
+.panel-drag-grip {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.panel-drag-grip:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+
+.panel-drag-grip:active {
+  cursor: grabbing;
+}
+
+.grip-dots {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+  user-select: none;
+}
+
+/* ── Hover-to-focus hint ───────────────────────── */
+
+.terminal-root:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(201, 125, 58, 0.28);
+}

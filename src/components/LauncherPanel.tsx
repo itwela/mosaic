@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { open as pickFile } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { LaunchItem, Panel } from "../types";
+import { pushUndo } from "../store/undo";
+import { restoreLaunchItem } from "../store/workspaces";
 import "./LauncherPanel.css";
 
 interface AppEntry {
@@ -14,6 +17,8 @@ type SortMode = "none" | "name-asc" | "name-desc" | "type";
 
 interface Props {
   panel: Panel;
+  panelIndex: number;
+  onReorderStart: (index: number, x: number, y: number) => void;
   onUpdate: (panel: Panel) => void;
   onClosePanel: () => void;
 }
@@ -49,9 +54,28 @@ function ExtBadge({ path }: { path: string }) {
   );
 }
 
-export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) {
+export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpdate, onClosePanel }: Props) {
   const items = panel.launchItems ?? [];
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // the add menu closes on any click outside it
+  useEffect(() => {
+    if (!addMenuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest(".launcher-add-wrap")) setAddMenuOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    return () => window.removeEventListener("pointerdown", onDown);
+  }, [addMenuOpen]);
+
+  function commitName() {
+    setRenaming(false);
+    onUpdate({ ...panel, name: nameDraft.trim() || undefined });
+  }
   const [appList, setAppList] = useState<AppEntry[]>([]);
   const [search, setSearch] = useState("");
   const [itemSearch, setItemSearch] = useState("");
@@ -128,7 +152,20 @@ export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) 
   }
 
   function removeItem(id: string) {
+    const index = items.findIndex((i) => i.id === id);
+    const item = items[index];
     save(items.filter((i) => i.id !== id));
+    if (item) pushUndo(`Removed "${item.name}"`, () => restoreLaunchItem(panel.id, index, item));
+  }
+
+  async function copyLink(item: LaunchItem) {
+    try {
+      await writeText(item.path);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId((cur) => (cur === item.id ? null : cur)), 1400);
+    } catch (e) {
+      setErrors((prev) => [...prev, `${item.name}: could not copy (${String(e)})`]);
+    }
   }
 
   function startEdit(item: LaunchItem) {
@@ -214,18 +251,62 @@ export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) 
   return (
     <div className="launcher-panel">
       <div className="launcher-header">
-        <span className="launcher-label">Launcher</span>
+        <button
+          className="panel-drag-grip"
+          title="Drag to reorder panel"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onReorderStart(panelIndex, e.clientX, e.clientY);
+          }}
+        >
+          <span className="grip-dots">⠿</span>
+        </button>
+        {renaming ? (
+          <input
+            className="launcher-rename-input"
+            value={nameDraft}
+            autoFocus
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitName();
+              if (e.key === "Escape") setRenaming(false);
+            }}
+          />
+        ) : (
+          <span
+            className="launcher-label"
+            title="Double-click to rename"
+            onDoubleClick={() => { setNameDraft(panel.name ?? ""); setRenaming(true); }}
+          >
+            {panel.name || "Launcher"}
+          </span>
+        )}
         <div className="launcher-header-actions">
-          <button className="launcher-btn-ghost" onClick={handleAddFile}>+ file</button>
-          <button className="launcher-btn-ghost" onClick={handleAddApp}>+ app</button>
-          <button className="launcher-btn-ghost" onClick={() => setAddingUrl(true)}>+ url</button>
+          <div className="launcher-add-wrap">
+            <button
+              className={`launcher-btn-ghost launcher-add-btn ${addMenuOpen ? "launcher-add-open" : ""}`}
+              onClick={() => setAddMenuOpen((o) => !o)}
+              title="Add a file, app or URL"
+            >
+              +
+            </button>
+            {addMenuOpen && (
+              <div className="launcher-add-menu">
+                <button onClick={() => { setAddMenuOpen(false); void handleAddFile(); }}>File</button>
+                <button onClick={() => { setAddMenuOpen(false); void handleAddApp(); }}>App</button>
+                <button onClick={() => { setAddMenuOpen(false); setAddingUrl(true); }}>URL</button>
+              </div>
+            )}
+          </div>
           {items.length > 0 && (
             <button
               className={`launcher-btn-primary ${launching ? "launcher-btn-launching" : ""}`}
               onClick={launchAll}
               disabled={launching}
+              title="Open everything in this launcher"
             >
-              {launching ? "Launching..." : "Launch All"}
+              {launching ? "Launching…" : "▶ Launch"}
             </button>
           )}
           <button className="launcher-panel-close-btn" onClick={onClosePanel} title="Close panel">
@@ -375,7 +456,13 @@ export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) 
                   </div>
                 </div>
               ) : (
-              <div key={item.id} className="launcher-card">
+              <div
+                key={item.id}
+                className={`launcher-card ${copiedId === item.id ? "launcher-card-copied" : ""}`}
+                // Clicking the card itself copies its link (or path); ▶ opens it.
+                onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) void copyLink(item); }}
+                title={item.kind === "url" ? "Click to copy link" : "Click to copy path"}
+              >
                 <div className="launcher-card-icon">
                   {(() => {
                     const p = previews[item.id];
@@ -394,7 +481,7 @@ export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) 
                   })()}
                 </div>
                 <div className="launcher-card-info">
-                  <span className="launcher-card-name">{item.name}</span>
+                  <span className="launcher-card-name">{item.name}{copiedId === item.id && <span className="launcher-copied-flag">copied</span>}</span>
                   <span className="launcher-card-path">
                     {item.kind === "url" ? item.path : item.path.replace(/^\/Users\/[^/]+/, "~")}
                   </span>
@@ -403,6 +490,12 @@ export default function LauncherPanel({ panel, onUpdate, onClosePanel }: Props) 
                   <button className="launcher-card-launch" onClick={() => launchOne(item)} title="Open">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                       <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </button>
+                  <button className="launcher-card-copy" onClick={() => void copyLink(item)} title={item.kind === "url" ? "Copy link" : "Copy path"}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
                   </button>
                   <button className="launcher-card-edit" onClick={() => startEdit(item)} title="Edit">

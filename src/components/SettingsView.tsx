@@ -1,10 +1,28 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { invoke } from "@tauri-apps/api/core";
 import "./SettingsView.css";
 
 export default function SettingsView() {
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [hooksInstalled, setHooksInstalled] = useState<boolean | null>(null);
+  const [hooksError, setHooksError] = useState("");
+
+  useEffect(() => {
+    invoke<boolean>("agent_hooks_installed").then(setHooksInstalled).catch(() => setHooksInstalled(false));
+  }, []);
+
+  async function installHooks() {
+    setHooksError("");
+    try {
+      await invoke("install_agent_hooks");
+      setHooksInstalled(true);
+    } catch (e) {
+      setHooksError(String(e));
+    }
+  }
 
   useEffect(() => {
     isEnabled().then((v) => {
@@ -41,6 +59,33 @@ export default function SettingsView() {
             >
               <span className="toggle-thumb" />
             </button>
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <div className="settings-section-label">Agent status</div>
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-name">Claude Code status hooks</span>
+              <span className="settings-row-desc">
+                Claude Code reports exactly when it is working, finished, or waiting for your approval,
+                instead of Mosaic guessing from the screen. Adds hooks to ~/.claude/settings.json
+                (backed up first). They do nothing outside Mosaic. Restart running Claude sessions after installing.
+              </span>
+              {hooksError && <span className="settings-row-desc settings-error">{hooksError}</span>}
+            </div>
+            <button className="settings-action" onClick={installHooks} disabled={hooksInstalled === null}>
+              {hooksInstalled ? "Reinstall" : "Install"}
+            </button>
+          </div>
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-name">Codex approvals</span>
+              <span className="settings-row-desc">
+                Mosaic listens for Codex's terminal notifications. Turn them on with
+                <code> [tui] notifications = true </code> in ~/.codex/config.toml.
+              </span>
+            </div>
           </div>
         </div>
       </div>

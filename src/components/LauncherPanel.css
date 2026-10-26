@@ -440,6 +440,7 @@
   opacity: 0.8;
 }
 
+.launcher-card-copy,
 .launcher-card-edit {
   background: none;
   border: 1px solid transparent;
@@ -455,6 +456,7 @@
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 
+.launcher-card-copy:hover,
 .launcher-card-edit:hover {
   color: var(--accent);
   background: var(--surface-2);
@@ -599,4 +601,17 @@
 .app-picker-item:hover {
   background: var(--stone);
   color: var(--cream);
+}
+
+/* ── Click-to-copy ──────────────────────────────── */
+
+.launcher-card { cursor: copy; }
+.launcher-card-copied { border-color: var(--accent); }
+.launcher-copied-flag {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
 }

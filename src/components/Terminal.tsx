@@ -5,6 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import "@xterm/xterm/css/xterm.css";
+import { detectScreenState, notificationState } from "../lib/agents";
+import { quoteForShell } from "../lib/screenshotDrag";
 
 interface Props {
   id: string;
@@ -34,14 +36,40 @@ function isPointInside(el: HTMLElement | null, position: { x: number; y: number 
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+// Live terminals by tab id, so the "All running" view can borrow a terminal's
+// DOM into its own grid and hand it back afterwards. Moving the element keeps
+// the scrollback, the shell and the xterm instance; only the host changes.
+interface LiveTerminal {
+  element: HTMLElement;
+  home: HTMLElement;
+  observe: (host: HTMLElement) => void;
+  unobserve: (host: HTMLElement) => void;
+  refit: () => void;
+}
+const live = new Map<string, LiveTerminal>();
+
+export function adoptTerminal(id: string, host: HTMLElement): boolean {
+  const t = live.get(id);
+  if (!t) return false;
+  if (t.element.parentElement !== host) host.appendChild(t.element);
+  t.observe(host);
+  t.refit();
+  return true;
+}
+
+export function releaseTerminal(id: string, host: HTMLElement) {
+  const t = live.get(id);
+  if (!t) return;
+  t.unobserve(host);
+  if (t.element.parentElement === host) {
+    t.home.appendChild(t.element);
+    t.refit();
+  }
+}
+
 // Match what a normal terminal does with a dropped file: hand the shell a path
 // it can actually run, quoting only when the path has something the shell would
 // otherwise interpret.
-function quoteForShell(path: string) {
-  return /^[A-Za-z0-9_./@%+:,=-]+$/.test(path)
-    ? path
-    : `'${path.replace(/'/g, "'\\''")}'`;
-}
 
 const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, active, cwd }, ref) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -50,6 +78,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
   const fitRef = useRef<FitAddon | null>(null);
   const mountedRef = useRef(false);
   const prevCwdRef = useRef<string | undefined>(cwd);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -105,6 +134,25 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(containerRef.current);
+    const home = containerRef.current;
+
+    // FitAddon measures the terminal's parent with getComputedStyle. Under a
+    // display:none workspace that returns the *specified* "100%", which it
+    // reads as 100px, so hidden terminals were squeezed to ~10 columns and the
+    // shell redrew everything into the top-left corner. Only fit real boxes.
+    let lastSize = "";
+    const refit = () => {
+      const host = term.element?.parentElement;
+      if (!host || host.clientWidth < 40 || host.clientHeight < 30) return;
+      fit.fit();
+      const size = `${term.cols}x${term.rows}`;
+      if (size === lastSize) return;
+      lastSize = size;
+      invoke("pty_resize", { id, cols: term.cols, rows: term.rows })
+        // The shell only redraws for the new size once the resize lands.
+        .then(() => term.refresh(0, term.rows - 1))
+        .catch(console.error);
+    };
     fit.fit();
 
     termRef.current = term;
@@ -112,11 +160,51 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     mountedRef.current = true;
     prevCwdRef.current = cwd;
 
-    const { cols, rows } = term;
+    const visible = home.clientWidth >= 40 && home.clientHeight >= 30;
+    const cols = visible ? term.cols : 120;
+    const rows = visible ? term.rows : 32;
+    if (!visible) term.resize(cols, rows);
+    lastSize = `${cols}x${rows}`;
     invoke("pty_create", { id, cols, rows, cwd: cwd ?? null }).catch(console.error);
 
+    // Agents announce "needs approval" / "turn finished" as desktop
+    // notifications (OSC 9, or OSC 777;notify). That's a far better signal
+    // than guessing from the screen, so forward it.
+    const notify = (text: string) => {
+      window.dispatchEvent(new CustomEvent("mosaic-agent-notify", {
+        detail: { id, state: notificationState(text), at: Date.now() },
+      }));
+      return true;
+    };
+    term.parser.registerOscHandler(9, (data) => {
+      // OSC 9;4 is ConEmu's progress bar, not a notification.
+      if (/^4;/.test(data)) return false;
+      return notify(data);
+    });
+    term.parser.registerOscHandler(777, (data) => {
+      if (!data.startsWith("notify;")) return false;
+      return notify(data.slice(7));
+    });
+
+    let screenTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastScreenState = "";
+    const publishScreen = () => {
+      const buffer = term.buffer.active;
+      const lines: string[] = [];
+      // baseY follows the live screen even if the user scrolls into history.
+      for (let row = buffer.baseY; row < buffer.baseY + term.rows; row++) {
+        lines.push(buffer.getLine(row)?.translateToString(true) ?? "");
+      }
+      const state = detectScreenState(lines.join("\n"));
+      if (state !== lastScreenState) {
+        lastScreenState = state;
+        window.dispatchEvent(new CustomEvent("mosaic-agent-screen", { detail: { id, state } }));
+      }
+    };
+    const screenInterval = setInterval(publishScreen, 1000);
     term.onData((data) => {
       invoke("pty_write", { id, data }).catch(console.error);
+      window.dispatchEvent(new CustomEvent("mosaic-agent-input", { detail: { id, at: Date.now() } }));
     });
 
     let unlisten1: (() => void) | null = null;
@@ -124,7 +212,10 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     let unlisten3: (() => void) | null = null;
 
     listen<string>(`pty-data-${id}`, (event) => {
-      term.write(event.payload);
+      term.write(event.payload, () => {
+        if (screenTimer) clearTimeout(screenTimer);
+        screenTimer = setTimeout(publishScreen, 100);
+      });
     }).then((fn) => { unlisten1 = fn; });
 
     listen(`pty-exit-${id}`, () => {
@@ -164,41 +255,58 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let rafId: number | null = null;
     const ro = new ResizeObserver(() => {
-      // Coalesce to one fit per animation frame instead of one per resize
-      // tick. A live panel drag can fire this dozens of times a second;
-      // calling fit() that often forces xterm to re-measure and reflow its
-      // whole buffer on every intermediate frame, which is what produces
-      // the stutter/garbled-text feeling during a drag.
+      // Coalesce a live panel drag into one fit per frame and one PTY resize
+      // once it settles; refit() skips hidden (zero-size) hosts entirely.
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        fit.fit();
+        const host = term.element?.parentElement;
+        if (host && host.clientWidth >= 40 && host.clientHeight >= 30) fit.fit();
       });
-
       if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        invoke("pty_resize", { id, cols: term.cols, rows: term.rows })
-          .then(() => {
-            // The shell only learns the new size once pty_resize lands, so
-            // anything it drew mid-drag was sized for stale dimensions.
-            // Force one clean full repaint now that cols/rows have settled.
-            term.refresh(0, term.rows - 1);
-          })
-          .catch(console.error);
-      }, 50);
+      resizeTimer = setTimeout(refit, 50);
     });
     ro.observe(containerRef.current);
 
+    if (term.element) {
+      live.set(id, {
+        element: term.element,
+        home,
+        observe: (host) => ro.observe(host),
+        unobserve: (host) => ro.unobserve(host),
+        refit,
+      });
+      window.dispatchEvent(new CustomEvent("mosaic-terminal-live", { detail: { id } }));
+    }
+
     return () => {
       if (resizeTimer) clearTimeout(resizeTimer);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (live.get(id)?.element === term.element) live.delete(id);
+      if (screenTimer) clearTimeout(screenTimer);
+      clearInterval(screenInterval);
       ro.disconnect();
       unlisten1?.();
       unlisten2?.();
       unlisten3?.();
       mountedRef.current = false;
-      invoke("pty_kill", { id }).catch(console.error);
+      // NOTE: we do NOT kill the PTY here. The session stays alive in Rust so a
+      // panel reorder (which remounts this component) reattaches to the same
+      // shell. Closing a tab/panel/workspace kills it explicitly instead.
       term.dispose();
     };
+  }, [id]);
+
+  useEffect(() => {
+    const insert = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: string; paths: string[] }>).detail;
+      if (detail.id !== id) return;
+      const data = detail.paths.map((path) => `${quoteForShell(path)} `).join("");
+      invoke("pty_write", { id, data }).catch(console.error);
+      termRef.current?.focus();
+    };
+    window.addEventListener("mosaic-insert-screenshot", insert);
+    return () => window.removeEventListener("mosaic-insert-screenshot", insert);
   }, [id]);
 
   // when the saved folder changes on an already-running terminal, cd into it
@@ -212,25 +320,44 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
   }, [cwd, id]);
 
   useEffect(() => {
-    if (active && fitRef.current && termRef.current) {
-      const term = termRef.current;
-      fitRef.current.fit();
-      invoke("pty_resize", { id, cols: term.cols, rows: term.rows })
-        .then(() => {
-          // This tab was display:none while inactive, so any output it
-          // received was painted for whatever size it last knew about.
-          // Force a clean repaint now that it's visible and re-sized.
-          term.refresh(0, term.rows - 1);
-        })
-        .catch(console.error);
-      term.focus();
+    if (active && termRef.current) {
+      // The tab was display:none while inactive; size it to its real box now.
+      live.get(id)?.refit();
+      termRef.current.refresh(0, termRef.current.rows - 1);
+      termRef.current.focus();
     }
   }, [active, id]);
+
+  // Hover a terminal for 3s to focus it, so you can type without clicking.
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
+  function handleMouseEnter() {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      hoverTimerRef.current = null;
+      termRef.current?.focus();
+    }, 3000);
+  }
+
+  function handleMouseLeave() {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }
 
   return (
     <div
       ref={rootRef}
+      className="terminal-root"
+      data-terminal-id={id}
       style={{ width: "100%", height: "100%", position: "relative" }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       // Files are handled by the Tauri drag-drop event above; these only stop
       // the webview from navigating away if something else (a URL, a text
       // selection) gets dropped on the terminal.

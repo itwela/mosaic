@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { v4 as uuidv4 } from "uuid";
 import { SavedCommand } from "../types";
+import { incrementCopy } from "../store/commands";
 import "./CommandToolbox.css";
 
 interface Props {
@@ -29,6 +30,7 @@ export default function CommandToolbox({ tabTitle, commands, onClose, onAdd, onD
   async function copy(cmd: SavedCommand) {
     try {
       await writeText(cmd.text);
+      incrementCopy(cmd.text);
       setCopiedId(cmd.id);
       setTimeout(() => setCopiedId((cur) => (cur === cmd.id ? null : cur)), 1200);
     } catch (err) {

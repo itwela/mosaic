@@ -1,0 +1,116 @@
+.usage-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.usage-fetched {
+  flex: 1;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.usage-refresh {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--cream-dim);
+  width: 24px;
+  height: 22px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.usage-refresh:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.usage-refresh:disabled { opacity: 0.5; cursor: default; }
+
+.usage-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.usage-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.usage-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-logo { width: 16px; height: 16px; }
+
+.usage-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.usage-plan {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  border: 1px solid var(--stone);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.usage-meter { display: flex; flex-direction: column; gap: 4px; }
+
+.usage-meter-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.usage-meter-label { color: var(--cream-dim); }
+.usage-meter-pct {
+  color: var(--cream);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* a lead-came channel with a glass fill, like the workspace counters */
+.usage-bar {
+  height: 9px;
+  border-radius: 3px;
+  background: #0c0a08;
+  border: 1px solid rgba(228, 232, 238, 0.12);
+  overflow: hidden;
+}
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.02) 55%, rgba(0, 0, 0, 0.2)),
+    var(--usage-color);
+  transition: width 0.4s ease;
+}
+.usage-cool { --usage-color: #2f6fd6; }
+.usage-warm { --usage-color: #e08a1e; }
+.usage-hot  { --usage-color: #d0304e; }
+
+.usage-reset { font-size: 10.5px; color: var(--muted); }
+
+.usage-note, .usage-error {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.usage-error { color: #e8796a; }

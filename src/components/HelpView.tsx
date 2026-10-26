@@ -17,7 +17,20 @@ const concepts = [
     label: "Portable workspaces",
     desc: "Use the down-arrow beside a workspace to export its layout, terminals, tabs, and launcher shortcuts. Import the .mosaic.json file on another computer to add it there.",
   },
+  {
+    label: "Status dots",
+    desc: "A colored dot on each tab and workspace tells you at a glance what's happening. Amber = an agent is running. Red = it's waiting on you. Gray = idle. Hover any terminal for a moment and it focuses itself.",
+  },
+  {
+    label: "Drag to reorder",
+    desc: "Drag a workspace in the sidebar, or grab the dotted grip at the left of any panel, to move things around.",
+  },
 ];
+
+const shortcut = {
+  keys: "⌘ / Ctrl + Shift + S",
+  desc: "Tuck Mosaic into a small bottom-right pill to free up the screen for screenshots. Press it again to restore.",
+};
 
 export default function HelpView() {
   return (
@@ -53,6 +66,12 @@ export default function HelpView() {
           workspaces are exactly where you left them. Exported workspaces
           are portable JSON files you can copy between computers.
         </p>
+
+        <div className="help-shortcut">
+          <span className="help-shortcut-label">Screenshot mode</span>
+          <span className="help-shortcut-keys">{shortcut.keys}</span>
+          <span className="help-shortcut-desc">{shortcut.desc}</span>
+        </div>
       </div>
     </div>
   );

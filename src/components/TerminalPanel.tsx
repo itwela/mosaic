@@ -1,18 +1,26 @@
-import { useRef, useState } from "react";
+import { CSSProperties, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Panel, SavedCommand, Tab } from "../types";
+import { agentBadge, STATUS_COLORS, STATUS_LABELS, TabMeta } from "../lib/agents";
+import { recordCommand } from "../store/commands";
+import { pushUndo } from "../store/undo";
+import { restoreTab } from "../store/workspaces";
 import Terminal, { TerminalHandle } from "./Terminal";
 import CommandToolbox from "./CommandToolbox";
 import "./TerminalPanel.css";
 
 interface Props {
   panel: Panel;
+  panelIndex: number;
+  tabMeta: Record<string, TabMeta>;
+  onReorderStart: (index: number, x: number, y: number) => void;
   onUpdate: (panel: Panel) => void;
   onClosePanel: () => void;
 }
 
-export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) {
+export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderStart, onUpdate, onClosePanel }: Props) {
   const activeTab = panel.tabs.find((t) => t.id === panel.activeTabId) ?? panel.tabs[0];
   const termRefs = useRef<Map<string, TerminalHandle>>(new Map());
   const [toolboxOpen, setToolboxOpen] = useState(false);
@@ -29,6 +37,14 @@ export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) 
 
   function closeTab(tabId: string) {
     if (panel.tabs.length === 1) return;
+    const index = panel.tabs.findIndex((t) => t.id === tabId);
+    const tab = panel.tabs[index];
+    // The shell stays alive until the undo window closes.
+    pushUndo(
+      `Closed tab "${tab.title}"`,
+      () => restoreTab(panel.id, index, tab),
+      () => { invoke("pty_kill", { id: tabId }).catch(console.error); },
+    );
     const remaining = panel.tabs.filter((t) => t.id !== tabId);
     const newActive =
       panel.activeTabId === tabId
@@ -52,6 +68,7 @@ export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) 
   }
 
   function addSavedCommand(cmd: SavedCommand) {
+    recordCommand(cmd.text, cmd.label);
     onUpdate({
       ...panel,
       tabs: panel.tabs.map((t) =>
@@ -86,11 +103,22 @@ export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) 
   return (
     <div className="terminal-panel">
       <div className="tab-bar">
+        <button
+          className="panel-drag-grip"
+          title="Drag to reorder panel"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onReorderStart(panelIndex, e.clientX, e.clientY);
+          }}
+        >
+          <span className="grip-dots">⠿</span>
+        </button>
         {panel.tabs.map((tab) => (
           <TabItem
             key={tab.id}
             tab={tab}
             active={tab.id === panel.activeTabId}
+            meta={tabMeta[tab.id]}
             onSelect={() => onUpdate({ ...panel, activeTabId: tab.id })}
             onClose={() => closeTab(tab.id)}
             onRename={(title) => renameTab(tab.id, title)}
@@ -186,12 +214,14 @@ export default function TerminalPanel({ panel, onUpdate, onClosePanel }: Props) 
 function TabItem({
   tab,
   active,
+  meta,
   onSelect,
   onClose,
   onRename,
 }: {
   tab: Tab;
   active: boolean;
+  meta?: TabMeta;
   onSelect: () => void;
   onClose: () => void;
   onRename: (title: string) => void;
@@ -205,8 +235,15 @@ function TabItem({
     else setDraft(tab.title);
   }
 
+  const status = meta?.status ?? "idle";
+  const badge = meta ? agentBadge(meta.agent) : null;
+
   return (
-    <div className={`tab-item ${active ? "tab-active" : ""}`} onClick={onSelect}>
+    <div className={`tab-item tab-status-${status} ${active ? "tab-active" : ""}`} style={{ "--tab-status": STATUS_COLORS[status] } as CSSProperties} title={STATUS_LABELS[status]} onClick={onSelect}>
+      {badge && (badge.logo ?
+        <img className="tab-agent-logo" src={badge.logo} alt={badge.name} title={badge.name} /> :
+        <span className="tab-agent-name" title={badge.name}>{badge.name}</span>
+      )}
       {editing ? (
         <input
           className="tab-rename-input"

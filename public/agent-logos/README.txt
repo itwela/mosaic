@@ -1,0 +1,1 @@
+Brand icons from Lobe Icons (https://github.com/lobehub/lobe-icons), MIT license in LICENSE. Monochrome icons are rendered white for dark backgrounds. Brand trademarks belong to their respective owners.

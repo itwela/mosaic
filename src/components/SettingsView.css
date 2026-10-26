@@ -115,3 +115,20 @@
 .toggle-on .toggle-thumb {
   transform: translateX(18px);
 }
+
+.settings-action {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.settings-action:hover:not(:disabled) { background: var(--accent); color: #0f0d0b; }
+.settings-action:disabled { opacity: 0.5; }
+.settings-error { color: #e8796a; }
+.settings-row-desc code { font-size: 11px; color: var(--cream); }

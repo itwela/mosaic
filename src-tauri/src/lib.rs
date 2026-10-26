@@ -1,9 +1,13 @@
+mod agents;
 mod pty;
+mod screenshots;
 
 use pty::PtyManager;
 use std::sync::Arc;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_autostart::MacosLauncher;
+
+const SCREENSHOT_SHORTCUT: &str = "CmdOrCtrl+Shift+S";
 
 pub struct AppState {
     pub pty_manager: Arc<PtyManager>,
@@ -44,6 +48,11 @@ async fn pty_resize(
 async fn pty_kill(id: String, state: State<'_, AppState>) -> Result<(), String> {
     state.pty_manager.kill(&id);
     Ok(())
+}
+
+#[tauri::command]
+fn pty_statuses(state: State<'_, AppState>) -> Vec<pty::SessionStatus> {
+    state.pty_manager.statuses()
 }
 
 #[tauri::command]
@@ -209,8 +218,28 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        let _ = app.emit("toggle-screenshot-mode", ());
+                    }
+                })
+                .build(),
+        )
         .manage(AppState { pty_manager })
-        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file])
+        .setup(|app| {
+            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+            #[cfg(desktop)]
+            {
+                match app.global_shortcut().register(SCREENSHOT_SHORTCUT) {
+                    Ok(()) => eprintln!("[mosaic] registered global shortcut: {}", SCREENSHOT_SHORTCUT),
+                    Err(e) => eprintln!("[mosaic] failed to register global shortcut {}: {}", SCREENSHOT_SHORTCUT, e),
+                }
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,0 +1,858 @@
+/* ═══════════════════════════════════════════════════════════════
+   Stained-glass mosaic theme
+   The whole app sits on one glass-on-glass mosaic (a single pre-rendered
+   image — cheap to paint). Chrome is smoked glass over it; terminals are
+   clear panes held in thin lead came. No filters or animated effects
+   over the terminals.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:        #0f0d0b;
+  --surface:   #171411;
+  --surface-2: #221e1a;
+  --stone:     #2c2722;
+  --cream:     #f4eee4;
+  --cream-dim: #c4baab;
+  --muted:     #8e8475;
+  --accent:    #d4dae3;
+  --accent-dk: #9aa3b0;
+  --border:    #2b2621;
+  --red:       #e0603f;
+
+  --glass: #0e0a07;
+  --lead: #0c0a08;
+  --smoke: rgba(12, 10, 8, 0.74);
+}
+
+html,
+body,
+#root,
+.app {
+  background: var(--lead) url("/textures/glass.webp") center / cover no-repeat fixed;
+}
+
+/* ── Smoked-glass chrome ──────────────────────────────────────── */
+
+.sidebar {
+  background: var(--smoke);
+  border-right: 4px solid var(--lead);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-logo {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.grid-toolbar {
+  background: var(--smoke);
+  border-bottom: 4px solid var(--lead);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.grid-workspace-name {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.workspace-active {
+  background: rgba(210, 218, 230, 0.16) !important;
+  box-shadow: inset 0 0 0 1px rgba(210, 218, 230, 0.45);
+}
+
+/* ── The wall shows through between the panes ─────────────────── */
+
+.grid-body {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.panel-container {
+  padding: 7px;
+}
+
+/* ── Panes in lead came ───────────────────────────────────────── */
+
+.window-frame {
+  height: 100%;
+  border: 4px solid var(--lead);
+  border-radius: 3px;
+  background: var(--lead);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+.panel-container:focus-within .window-frame {
+  box-shadow:
+    0 0 0 1px rgba(225, 230, 238, 0.75),
+    0 0 0 4px rgba(210, 218, 230, 0.22),
+    0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+.window-frame > .terminal-panel,
+.window-frame > .launcher-panel {
+  border: none;
+  border-radius: 1px;
+  background: var(--glass);
+}
+
+.window-frame .tab-bar,
+.window-frame .launcher-header {
+  background: #15110d;
+  border-bottom: 1px solid #241e18;
+}
+
+/* ── Drag ─────────────────────────────────────────────────────── */
+
+.panel-drop-target {
+  box-shadow: none;
+}
+
+.panel-drop-target .window-frame {
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+.panel-dragging {
+  opacity: 0.45;
+}
+
+/* ── Chrome controls: each one a piece of glass in lead ───────── */
+
+.workspace-item,
+.commands-nav-btn,
+.add-workspace-btn,
+.import-workspace-btn,
+.grid-toolbar-actions button,
+.screenshot-folder {
+  border: 2px solid var(--lead) !important;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 45%, rgba(0, 0, 0, 0.14)),
+    rgba(20, 17, 14, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: var(--cream);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.workspace-item { margin-bottom: 6px; }
+
+.workspace-item:hover,
+.commands-nav-btn:hover,
+.add-workspace-btn:hover,
+.import-workspace-btn:hover,
+.grid-toolbar-actions button:hover,
+.screenshot-folder:hover {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 45%, rgba(0, 0, 0, 0.1)),
+    rgba(48, 40, 30, 0.72);
+}
+
+/* selected: a fine silver came along the pane, no fill */
+.workspace-active,
+.commands-nav-active {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 45%, rgba(0, 0, 0, 0.1)),
+    rgba(34, 34, 38, 0.72) !important;
+  box-shadow:
+    inset 3px 0 0 #e4e8ee,
+    inset 0 0 0 1px rgba(228, 232, 238, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+/* counters: number-only glass beads in the status colour */
+.workspace-count {
+  min-width: 26px;
+  padding: 0 7px;
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.2)),
+    color-mix(in srgb, var(--count-color) 62%, #0c0a08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.workspace-count strong {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.workspace-count.is-empty {
+  opacity: 1;
+  background: transparent !important;
+  border-color: rgba(228, 232, 238, 0.14) !important;
+  box-shadow: none;
+}
+
+.workspace-count.is-empty strong {
+  color: var(--cream-dim) !important;
+  opacity: 0.6;
+  text-shadow: none;
+}
+
+.grid-toolbar-actions .grid-clear-all:hover {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 220, 200, 0.18), rgba(0, 0, 0, 0.1)),
+    rgba(180, 50, 35, 0.6);
+}
+
+/* labels and small text need a little lift off the glass */
+.sidebar-section-label,
+.settings-btn,
+.help-btn,
+.about-btn,
+.screenshot-total,
+.logo-text,
+.grid-workspace-name {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.sidebar-section-label {
+  color: var(--cream-dim);
+  font-weight: 600;
+}
+
+.settings-btn,
+.help-btn,
+.about-btn {
+  color: var(--cream-dim);
+}
+
+/* screenshot thumbs set in lead like little panes */
+.screenshot-thumb {
+  border: 2px solid var(--lead);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.screenshot-thumb:hover {
+  border-color: var(--lead);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(210, 218, 230, 0.35);
+}
+
+/* ── Pages (commands, help, settings, about): a glass window ──── */
+
+.commands-view,
+.help-view,
+.settings-view,
+.about-view {
+  background: rgba(6, 5, 4, 0.35);
+}
+
+.commands-card,
+.help-card,
+.settings-card,
+.about-card {
+  border: 5px solid var(--lead);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 120px),
+    rgba(14, 12, 10, 0.84);
+  box-shadow:
+    inset 0 0 0 1px rgba(225, 230, 238, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.commands-title,
+.help-title,
+.settings-title {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* search + inputs: clear glass in lead */
+.commands-search-input,
+.toolbox-add-text,
+.app-picker-search {
+  border: 2px solid var(--lead) !important;
+  border-radius: 4px;
+  background: rgba(4, 3, 2, 0.55) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--cream);
+}
+
+.commands-search-input:focus,
+.toolbox-add-text:focus,
+.app-picker-search:focus {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(220, 226, 236, 0.6);
+}
+
+/* sort + category pills: small glass pieces */
+.commands-sort-btn,
+.commands-cat-pill {
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.12)),
+    rgba(30, 26, 21, 0.75);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--cream-dim);
+}
+
+.commands-sort-active,
+.commands-cat-active {
+  color: #ffffff !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.1)),
+    rgba(150, 160, 176, 0.6) !important;
+}
+
+.heat-swatch {
+  border: 1.5px solid var(--lead);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* each command is a glass tile tinted by how hot it is */
+.commands-item {
+  --heat: #6a8fd0;
+  border: 2px solid var(--lead) !important;
+  border-radius: 5px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.1), transparent 40%, rgba(0, 0, 0, 0.18)),
+    color-mix(in srgb, var(--heat) 24%, rgba(14, 12, 10, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 3px 0 0 var(--heat),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.commands-item:hover {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 40%, rgba(0, 0, 0, 0.14)),
+    color-mix(in srgb, var(--heat) 34%, rgba(14, 12, 10, 0.9));
+}
+
+.commands-item-text {
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.commands-heat-dot {
+  border: 1.5px solid var(--lead);
+  box-shadow: 0 0 8px var(--heat);
+}
+
+.commands-copy-btn,
+.commands-delete-btn,
+.commands-cat-select,
+.toolbox-copy-btn,
+.toolbox-delete-btn,
+.toolbox-add-btn {
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.12)),
+    rgba(30, 26, 21, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.commands-copy-btn:hover,
+.toolbox-copy-btn:hover,
+.toolbox-add-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.1)),
+    rgba(150, 160, 176, 0.6);
+}
+
+.commands-delete-btn:hover,
+.toolbox-delete-btn:hover {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 220, 200, 0.18), rgba(0, 0, 0, 0.1)),
+    rgba(180, 50, 35, 0.6);
+}
+
+/* settings rows + help concepts as inset panes */
+.settings-row,
+.help-concept,
+.help-shortcut {
+  border: 1.5px solid var(--lead);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.toggle-on {
+  background: linear-gradient(180deg, #eef1f5, #9aa3b0) !important;
+  box-shadow: 0 0 10px rgba(210, 218, 230, 0.45);
+}
+
+/* ── Modals: a glass window over smoked glass ──────────────────── */
+
+.toolbox-overlay,
+.app-picker-overlay {
+  background: rgba(6, 5, 4, 0.62);
+}
+
+.toolbox-modal,
+.app-picker {
+  border: 5px solid var(--lead) !important;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 90px),
+    rgba(16, 13, 11, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(225, 230, 238, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(210, 218, 230, 0.12),
+    0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+.toolbox-header,
+.app-picker-header {
+  border-bottom: 2px solid var(--lead);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
+    rgba(150, 160, 176, 0.14);
+}
+
+.toolbox-item,
+.app-picker-item {
+  border: 1.5px solid var(--lead);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.1)),
+    rgba(30, 26, 21, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  margin-bottom: 6px;
+}
+
+.toolbox-item:hover,
+.app-picker-item:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.1)),
+    rgba(110, 118, 132, 0.45);
+}
+
+.toolbox-add-form {
+  border-top: 2px solid var(--lead);
+}
+
+/* workspace options popover: a small glass pane */
+.ws-menu {
+  border: 2px solid var(--lead);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.1)),
+    rgba(22, 21, 22, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(228, 232, 238, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+.workspace-item:has(.ws-menu) {
+  z-index: 20;
+}
+
+/* macOS already names the app in the title bar */
+.logo-text {
+  display: none;
+}
+
+.sidebar:not(.sidebar-collapsed) .sidebar-collapse-btn {
+  margin-left: auto;
+}
+
+/* ⋯ only takes room while you're on that workspace row */
+.sidebar:not(.sidebar-collapsed) .ws-more { display: none; }
+.sidebar:not(.sidebar-collapsed) .workspace-item:hover .ws-more,
+.sidebar:not(.sidebar-collapsed) .ws-more-open { display: block; }
+
+.sidebar:not(.sidebar-collapsed) .workspace-count {
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+}
+
+.sidebar:not(.sidebar-collapsed) .workspace-counts { gap: 3px; }
+
+.sidebar-collapsed .workspace-counts {
+  flex-direction: row;
+  justify-content: center;
+  gap: 3px;
+}
+
+.sidebar-collapsed .workspace-count {
+  min-width: 24px;
+  width: auto;
+  height: 22px;
+  padding: 0 5px;
+}
+
+/* screenshot hover preview: a pane of clear glass in lead */
+.screenshot-preview {
+  border: 4px solid var(--lead);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.1)),
+    rgba(18, 17, 18, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(228, 232, 238, 0.18),
+    0 22px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* shift-click multi-select: a bright silver came around the pane */
+.screenshot-thumb-selected,
+.screenshot-thumb-selected:hover {
+  box-shadow: 0 0 0 2px #e4e8ee, 0 0 12px rgba(228, 232, 238, 0.45);
+}
+
+/* hover the logo to peek at the glass: the panes fade away */
+.logo-mark {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.logo-mark:hover {
+  transform: scale(1.08);
+}
+
+.window-frame {
+  transition: opacity 0.35s ease, box-shadow 0.2s ease;
+}
+
+.app:has(.logo-mark:hover) .window-frame,
+.panel-faded .window-frame {
+  opacity: 0.55;
+}
+
+/* settings · help · about: one glass strip split by lead into three panes */
+.sidebar-footer {
+  display: flex;
+  margin: 10px 8px 0;
+  border: 2px solid var(--lead);
+  border-radius: 4px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 45%, rgba(0, 0, 0, 0.14)),
+    rgba(20, 17, 14, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-collapsed .sidebar-footer {
+  flex-direction: column;
+  margin: 10px auto 0;
+  width: 46px;
+}
+
+.sidebar-footer .settings-btn,
+.sidebar-footer .help-btn,
+.sidebar-footer .about-btn {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: 34px;
+  min-height: 34px;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--cream-dim);
+  transition: color 0.15s, background 0.15s;
+}
+
+.sidebar-footer > button + button {
+  border-left: 2px solid var(--lead);
+}
+
+.sidebar-collapsed .sidebar-footer > button + button {
+  border-left: none;
+  border-top: 2px solid var(--lead);
+}
+
+.sidebar-footer > button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.sidebar-footer .sidebar-action-label {
+  display: none;
+}
+
+.sidebar-footer .settings-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sidebar-footer .help-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+}
+
+.sidebar-footer .about-btn-logo {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
+
+/* workspace reorder: silver came marks the landing spot, the row lifts out as glass */
+.workspace-insert-before::before,
+.workspace-insert-after::after {
+  background: linear-gradient(90deg, transparent, #eef1f5 12%, #eef1f5 88%, transparent);
+  box-shadow: 0 0 10px rgba(228, 232, 238, 0.75), 0 0 2px #fff;
+}
+
+.workspace-dragging {
+  opacity: 1;
+  border-style: dashed !important;
+  border-color: rgba(228, 232, 238, 0.35) !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: none !important;
+}
+
+.workspace-dragging > * {
+  opacity: 0.25;
+}
+
+.workspace-drag-ghost {
+  border: 2px solid var(--lead);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02) 45%, rgba(0, 0, 0, 0.12)),
+    rgba(34, 34, 38, 0.92);
+  box-shadow:
+    inset 3px 0 0 #e4e8ee,
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(228, 232, 238, 0.3),
+    0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+/* resize grip glows like a silver came */
+.resize-handle-h::after,
+.resize-handle-v::after {
+  background: #eef1f5;
+  box-shadow: 0 0 10px rgba(228, 232, 238, 0.7);
+}
+
+/* primary actions: polished silver with dark, engraved text */
+.launcher-btn-primary,
+.launcher-card-launch,
+.toolbox-add-btn:not(:disabled) {
+  color: #16161a !important;
+  font-weight: 600;
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #ffffff 0%, #dfe3e9 45%, #b9c0ca 100%) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.launcher-btn-primary:hover,
+.launcher-card-launch:hover,
+.toolbox-add-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: linear-gradient(180deg, #ffffff 0%, #eef1f5 45%, #cfd5de 100%) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 0 12px rgba(228, 232, 238, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Launch All never truncates — the header label gives way first */
+.launcher-btn-primary {
+  flex-shrink: 0;
+  max-width: none;
+}
+
+.launcher-label {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* launcher header: editable name, one + menu, compact launch */
+.launcher-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--cream);
+  cursor: text;
+}
+
+.launcher-rename-input {
+  flex: 1;
+  min-width: 60px;
+  max-width: 180px;
+  font: 600 12px var(--font-body);
+  color: var(--cream);
+  padding: 3px 6px;
+  border: 1.5px solid var(--lead);
+  border-radius: 4px;
+  background: rgba(4, 3, 2, 0.6);
+  box-shadow: 0 0 0 1px rgba(228, 232, 238, 0.5);
+  outline: none;
+}
+
+.launcher-header-actions {
+  overflow: visible;
+}
+
+.launcher-add-wrap {
+  position: relative;
+}
+
+.launcher-add-btn {
+  width: 26px;
+  padding: 3px 0;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+}
+
+.launcher-add-open {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.launcher-add-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  padding: 4px;
+  border: 2px solid var(--lead);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.1)),
+    rgba(22, 21, 22, 0.97);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(228, 232, 238, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.6);
+  animation: launcher-menu-in 0.14s ease-out;
+}
+
+.launcher-add-menu button {
+  background: none;
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  font: 12px var(--font-body);
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 3px;
+}
+
+.launcher-add-menu button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+@keyframes launcher-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Command cards: panes in one leaded window ─────────────────── */
+
+.commands-grid {
+  gap: 5px;
+  padding: 5px;
+  border-radius: 4px;
+  background: var(--lead);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.commands-item {
+  gap: 10px;
+  padding: 0 12px 12px;
+  border: none !important;
+  border-radius: 2px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 50%),
+    rgba(18, 16, 15, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.commands-item:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 50%),
+    rgba(26, 24, 22, 0.96);
+}
+
+/* the glass band: a patch of the real mosaic, tinted by category, lit by heat */
+.commands-item-top {
+  position: relative;
+  margin: 0 -12px;
+  height: 34px;
+  padding: 0 12px;
+  border-bottom: 3px solid var(--lead);
+  background:
+    linear-gradient(rgba(0, 0, 0, var(--glass-dim, 0.4)), rgba(0, 0, 0, var(--glass-dim, 0.4))),
+    linear-gradient(color-mix(in srgb, var(--cat, #888) 28%, transparent), color-mix(in srgb, var(--cat, #888) 28%, transparent)),
+    url("/textures/glass.webp") var(--glass-pos, 0 0) / 1600px auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -8px 14px rgba(0, 0, 0, 0.35);
+  transition: filter 0.2s;
+}
+
+.commands-item:hover .commands-item-top {
+  filter: brightness(1.25) saturate(1.1);
+}
+
+/* chips + heat sit on the glass as small lead-rimmed jewels */
+.commands-heat-dot {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--lead);
+  box-shadow: 0 0 10px var(--heat), inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+.commands-heat-count {
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.commands-cat-chip {
+  color: #fff !important;
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 3px;
+  background: rgba(10, 9, 8, 0.72);
+  text-shadow: none;
+}
+
+.commands-item-label {
+  color: var(--cream);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.commands-item-text {
+  border: 1.5px solid var(--lead);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.commands-item-actions {
+  margin-top: auto;
+}
+
+/* needs-attention counter: solid red, not a dark tint that reads as orange */
+.workspace-count.is-alert {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.15)),
+    #e0263c !important;
+  border-color: #ff6b7a !important;
+  animation: count-alert-pulse 1.4s ease-in-out infinite;
+}
+@keyframes count-alert-pulse {
+  50% { box-shadow: 0 0 0 3px rgba(224, 38, 60, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+}
+
+/* the all-running row sits apart from the custom workspaces */
+.workspace-all {
+  margin: 4px 8px 6px;
+  border-top: 1px dashed rgba(228, 232, 238, 0.14);
+  font-style: italic;
+}
