@@ -19,9 +19,11 @@ interface Meter {
 interface Provider {
   key: string;
   name: string;
-  logo: string;
+  logo?: string;
   plan?: string;
   meters: Meter[];
+  balances?: string[];
+  needsKey?: boolean;
   note?: string;
   error?: string;
 }
@@ -78,6 +80,49 @@ function codexProvider(r?: Result): Provider {
   return { ...base, meters, note: observed ? `as of your last Codex message, ${ago(observed)}` : undefined };
 }
 
+function cursorProvider(r?: Result): Provider {
+  const base = { key: "cursor", name: "Cursor", logo: "/agent-logos/cursor.svg" };
+  if (!r) return { ...base, meters: [] };
+  if (!r.ok) return { ...base, meters: [], error: r.error };
+  const d = r.data;
+  const plan = d?.planUsage ?? {};
+  const resetsAt = Number(d?.billingCycleEnd) || undefined;
+  const meters: Meter[] = [];
+  if (typeof plan.totalPercentUsed === "number") meters.push({ label: "Included usage", percent: plan.totalPercentUsed, resetsAt });
+  if (typeof plan.autoPercentUsed === "number") meters.push({ label: "Auto / Composer", percent: plan.autoPercentUsed });
+  if (typeof plan.apiPercentUsed === "number") meters.push({ label: "Named models (API)", percent: plan.apiPercentUsed });
+  return { ...base, meters };
+}
+
+// Antigravity reports a remaining fraction per model; models in the same family
+// share one pool, so show one meter per family. No fraction means it's used up.
+function antigravityProvider(r?: Result): Provider {
+  const base = { key: "antigravity", name: "Antigravity", logo: "/agent-logos/antigravity.svg" };
+  if (!r) return { ...base, meters: [] };
+  if (!r.ok) return { ...base, meters: [], error: r.error };
+  const d = r.data;
+  const families = new Map<string, Meter>();
+  for (const m of d?.cascadeModelConfigData?.clientModelConfigs ?? []) {
+    const q = m?.quotaInfo;
+    if (!q || typeof m.label !== "string") continue;
+    const family = m.label.replace(/\s*\(.*\)\s*$/, "");
+    if (families.has(family)) continue;
+    const remaining = typeof q.remainingFraction === "number" ? q.remainingFraction : 0;
+    families.set(family, { label: family, percent: (1 - remaining) * 100, resetsAt: q.resetTime ? Date.parse(q.resetTime) : undefined });
+  }
+  return { ...base, plan: d?.planStatus?.planInfo?.planName, meters: [...families.values()] };
+}
+
+function deepseekProvider(r?: Result): Provider {
+  const base = { key: "deepseek", name: "DeepSeek" };
+  if (!r) return { ...base, meters: [] };
+  if (!r.ok) return r.error === "needs-key" ? { ...base, meters: [], needsKey: true } : { ...base, meters: [], error: r.error, needsKey: true };
+  const balances = (r.data?.balance_infos ?? []).map((b: any) =>
+    `${b.total_balance} ${b.currency} balance` + (Number(b.granted_balance) > 0 ? ` (${b.granted_balance} granted)` : "")
+  );
+  return { ...base, meters: [], balances, note: r.data?.is_available === false ? "Balance too low for API calls." : undefined };
+}
+
 function ago(ms: number): string {
   const mins = Math.round((Date.now() - ms) / 60000);
   if (mins < 1) return "just now";
@@ -101,7 +146,15 @@ function level(percent: number): string {
 }
 
 export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }: Props) {
-  const [results, setResults] = useState<{ claude?: Result; codex?: Result }>({});
+  const [results, setResults] = useState<Record<string, Result | undefined>>({});
+  const [keyDraft, setKeyDraft] = useState("");
+
+  async function saveKey(provider: string) {
+    if (!keyDraft.trim()) return;
+    await invoke("set_provider_key", { provider, key: keyDraft });
+    setKeyDraft("");
+    void refresh();
+  }
   const [loading, setLoading] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [, tick] = useState(0);
@@ -114,7 +167,7 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
       setFetchedAt(Date.now());
     } catch (e) {
       const error = String(e);
-      setResults({ claude: { ok: false, error }, codex: { ok: false, error } });
+      setResults({ claude: { ok: false, error }, codex: { ok: false, error }, cursor: { ok: false, error }, antigravity: { ok: false, error }, deepseek: { ok: false, error } });
     } finally {
       setLoading(false);
     }
@@ -128,7 +181,13 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [refresh]);
 
-  const providers = [claudeProvider(results.claude), codexProvider(results.codex)];
+  const providers = [
+    claudeProvider(results.claude),
+    codexProvider(results.codex),
+    cursorProvider(results.cursor),
+    antigravityProvider(results.antigravity),
+    deepseekProvider(results.deepseek),
+  ];
 
   return (
     <div className="launcher-panel usage-panel">
@@ -160,12 +219,29 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
         {providers.map((p) => (
           <section key={p.key} className="usage-card">
             <header className="usage-card-head">
-              <img src={p.logo} alt="" className="usage-logo" />
+              {p.logo ? <img src={p.logo} alt="" className="usage-logo" /> : <span className="usage-logo usage-glyph">{p.name[0]}</span>}
               <span className="usage-name">{p.name}</span>
               {p.plan && <span className="usage-plan">{p.plan}</span>}
             </header>
-            {p.error ? (
+            {p.needsKey ? (
+              <div className="usage-key">
+                {p.error && <p className="usage-error">{p.error}</p>}
+                <p className="usage-note">Paste an API key from platform.deepseek.com. It's stored locally in ~/.mosaic/keys.json.</p>
+                <div className="usage-key-row">
+                  <input
+                    type="password"
+                    value={keyDraft}
+                    placeholder="sk-…"
+                    onChange={(e) => setKeyDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void saveKey(p.key); }}
+                  />
+                  <button onClick={() => void saveKey(p.key)}>Save</button>
+                </div>
+              </div>
+            ) : p.error ? (
               <p className="usage-error">{p.error}</p>
+            ) : p.balances ? (
+              p.balances.length ? p.balances.map((b) => <span key={b} className="usage-balance">{b}</span>) : <p className="usage-note">No balance reported.</p>
             ) : p.meters.length === 0 ? (
               <p className="usage-note">{loading || !fetchedAt ? "Loading…" : "No usage windows reported."}</p>
             ) : (

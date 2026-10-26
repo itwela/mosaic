@@ -239,7 +239,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage])
+        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

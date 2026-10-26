@@ -142,9 +142,19 @@ pub fn install_agent_hooks() -> Result<(), String> {
 // ── Usage ────────────────────────────────────────────────────────────────────
 
 fn curl_json(url: &str, headers: &[String]) -> Result<serde_json::Value, String> {
+    curl_with(url, headers, None, &[])
+}
+
+fn curl_with(url: &str, headers: &[String], body: Option<&str>, extra: &[&str]) -> Result<serde_json::Value, String> {
     // Headers go through stdin so tokens never show up in `ps`.
+    let mut args = vec!["-sS", "--max-time", "12", "-H", "@-"];
+    args.extend_from_slice(extra);
+    if let Some(b) = body {
+        args.extend_from_slice(&["-d", b]);
+    }
+    args.push(url);
     let mut child = Command::new("curl")
-        .args(["-sS", "--max-time", "12", "-H", "@-", url])
+        .args(&args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -219,18 +229,130 @@ fn codex_usage() -> Result<serde_json::Value, String> {
     Err("The latest Codex session has no rate-limit data yet. Send Codex a message.".into())
 }
 
+// Cursor keeps its login in the editor's VS Code state database.
+fn cursor_usage() -> Result<serde_json::Value, String> {
+    let db = home()?.join("Library/Application Support/Cursor/User/globalStorage/state.vscdb");
+    if !db.exists() {
+        return Err("Cursor isn't installed or signed in.".into());
+    }
+    let out = Command::new("sqlite3")
+        .arg(&db)
+        .arg("select value from ItemTable where key='cursorAuth/accessToken'")
+        .output()
+        .map_err(|e| e.to_string())?;
+    let token = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if token.is_empty() {
+        return Err("Not signed in. Open Cursor and log in.".into());
+    }
+    let usage = curl_with(
+        "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage",
+        &[format!("Authorization: Bearer {token}"), "Content-Type: application/json".into(), "Connect-Protocol-Version: 1".into()],
+        Some("{}"),
+        &[],
+    )?;
+    if usage.get("code").is_some() {
+        return Err("Cursor rejected the saved login. Open Cursor to refresh it.".into());
+    }
+    Ok(usage)
+}
+
+// Antigravity serves its quota from a local language server that only runs
+// while the app is open. Its port and CSRF token are on the process's argv.
+fn antigravity_usage() -> Result<serde_json::Value, String> {
+    let ps = Command::new("ps").args(["-axo", "pid=,command="]).output().map_err(|e| e.to_string())?;
+    let text = String::from_utf8_lossy(&ps.stdout);
+    let line = text
+        .lines()
+        .find(|l| l.contains("language_server_macos") && l.contains("--csrf_token"))
+        .ok_or("Open Antigravity to see its quota (it reports usage only while running).")?;
+    let pid = line.split_whitespace().next().unwrap_or("").to_string();
+    let csrf = line
+        .split_whitespace()
+        .skip_while(|a| *a != "--csrf_token")
+        .nth(1)
+        .ok_or("Antigravity's language server has no CSRF token")?
+        .to_string();
+    let lsof = Command::new("lsof")
+        .args(["-nP", "-a", "-iTCP", "-sTCP:LISTEN", "-p", &pid])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let ports: Vec<String> = String::from_utf8_lossy(&lsof.stdout)
+        .lines()
+        .skip(1)
+        .filter_map(|l| l.split_whitespace().nth(8)?.rsplit(':').next().map(str::to_string))
+        .collect();
+    let headers = [format!("X-Codeium-Csrf-Token: {csrf}"), "Content-Type: application/json".into(), "Connect-Protocol-Version: 1".into()];
+    let body = r#"{"metadata":{"ideName":"antigravity","extensionName":"antigravity","locale":"en"}}"#;
+    for port in ports {
+        let url = format!("https://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/GetUserStatus");
+        // Self-signed localhost certificate.
+        if let Ok(v) = curl_with(&url, &headers, Some(body), &["-k", "--max-time", "4"]) {
+            if let Some(status) = v.get("userStatus") {
+                return Ok(status.clone());
+            }
+        }
+    }
+    Err("Couldn't reach Antigravity's language server.".into())
+}
+
+fn keys_path() -> Result<PathBuf, String> {
+    Ok(home()?.join(".mosaic").join("keys.json"))
+}
+
+fn saved_key(provider: &str) -> Option<String> {
+    let raw = std::fs::read_to_string(keys_path().ok()?).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    json[provider].as_str().filter(|k| !k.is_empty()).map(str::to_string)
+}
+
+#[tauri::command]
+pub fn set_provider_key(provider: String, key: String) -> Result<(), String> {
+    let path = keys_path()?;
+    std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+    let mut json: serde_json::Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|r| serde_json::from_str(&r).ok())
+        .unwrap_or_else(|| serde_json::json!({}));
+    json[provider] = serde_json::json!(key.trim());
+    std::fs::write(&path, serde_json::to_string_pretty(&json).unwrap()).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn deepseek_usage() -> Result<serde_json::Value, String> {
+    let key = saved_key("deepseek")
+        .or_else(|| std::env::var("DEEPSEEK_API_KEY").ok())
+        .ok_or("needs-key")?;
+    let v = curl_json("https://api.deepseek.com/user/balance", &[format!("Authorization: Bearer {key}")])?;
+    if v.get("error").is_some() {
+        return Err("DeepSeek rejected the API key.".into());
+    }
+    Ok(v)
+}
+
 #[tauri::command]
 pub async fn provider_usage() -> serde_json::Value {
     let wrap = |r: Result<serde_json::Value, String>| match r {
         Ok(data) => serde_json::json!({ "ok": true, "data": data }),
         Err(error) => serde_json::json!({ "ok": false, "error": error }),
     };
-    let (claude, codex) = tokio::join!(
+    let (claude, codex, cursor, antigravity, deepseek) = tokio::join!(
         tokio::task::spawn_blocking(claude_usage),
         tokio::task::spawn_blocking(codex_usage),
+        tokio::task::spawn_blocking(cursor_usage),
+        tokio::task::spawn_blocking(antigravity_usage),
+        tokio::task::spawn_blocking(deepseek_usage),
     );
+    let done = |r: Result<Result<serde_json::Value, String>, tokio::task::JoinError>| wrap(r.unwrap_or_else(|e| Err(e.to_string())));
     serde_json::json!({
-        "claude": wrap(claude.unwrap_or_else(|e| Err(e.to_string()))),
-        "codex": wrap(codex.unwrap_or_else(|e| Err(e.to_string()))),
+        "claude": done(claude),
+        "codex": done(codex),
+        "cursor": done(cursor),
+        "antigravity": done(antigravity),
+        "deepseek": done(deepseek),
     })
 }
