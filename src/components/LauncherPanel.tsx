@@ -277,7 +277,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
           <span
             className="launcher-label"
             title="Double-click to rename"
-            onDoubleClick={() => { setNameDraft(panel.name ?? ""); setRenaming(true); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setNameDraft(panel.name ?? ""); setRenaming(true); }}
           >
             {panel.name || "Launcher"}
           </span>
