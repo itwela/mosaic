@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { invoke } from "@tauri-apps/api/core";
-import { setTheme, THEMES, useTheme } from "../lib/theme";
+import { AERO_WALLPAPERS, setTheme, setWallpaper, THEMES, useTheme, useWallpaper } from "../lib/theme";
 import "./SettingsView.css";
 
 export default function SettingsView() {
   const theme = useTheme();
+  const wallpaper = useWallpaper();
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -62,6 +63,22 @@ export default function SettingsView() {
               </button>
             ))}
           </div>
+          {theme === "aero" && (
+            <div className="wallpaper-options">
+              {AERO_WALLPAPERS.map((w) => (
+                <button
+                  key={w.id}
+                  className={`wallpaper-option ${wallpaper === w.id ? "wallpaper-option-active" : ""}`}
+                  onClick={() => setWallpaper(w.id)}
+                  aria-pressed={wallpaper === w.id}
+                  title={w.name}
+                >
+                  <span className="wallpaper-thumb" style={{ backgroundImage: `url(/textures/aero/${w.id}-thumb.webp)` }} />
+                  <span className="wallpaper-name">{w.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="settings-section">
