@@ -11,6 +11,7 @@ import HelpView from "./components/HelpView";
 import SettingsView from "./components/SettingsView";
 import CommandsView from "./components/CommandsView";
 import AllRunningView from "./components/AllRunningView";
+import FieldnotesView from "./components/FieldnotesView";
 import UndoToast from "./components/UndoToast";
 import { AgentStatus, Workspace } from "./types";
 import { sessionToMeta, SessionStatus, TabMeta, AgentScreenState, TabSignals } from "./lib/agents";
@@ -19,8 +20,9 @@ import { insertAt, pushUndo } from "./store/undo";
 import { recordCommand } from "./store/commands";
 import "./App.css";
 import "./luxury.css";
+import "./themes/aero.css";
 
-type View = "workspace" | "all" | "about" | "help" | "settings" | "commands";
+type View = "workspace" | "all" | "about" | "help" | "settings" | "commands" | "fieldnotes";
 
 const STATUS_POLL_MS = 2000;
 
@@ -28,6 +30,9 @@ export default function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(loadWorkspaces);
   const [activeId, setActiveId] = useState<string>(workspaces[0].id);
   const [view, setView] = useState<View>("workspace");
+  // Field notes stays mounted after its first open so switching back is instant.
+  const [fieldnotesOpened, setFieldnotesOpened] = useState(false);
+  useEffect(() => { if (view === "fieldnotes") setFieldnotesOpened(true); }, [view]);
   const [tabMeta, setTabMeta] = useState<Record<string, TabMeta>>({});
   const screenshotToggleRef = useRef<() => void>(() => {});
 
@@ -395,6 +400,7 @@ export default function App() {
         onHelp={() => toggleView("help")}
         onSettings={() => toggleView("settings")}
         onCommands={() => toggleView("commands")}
+        onFieldnotes={() => toggleView("fieldnotes")}
         onAllRunning={() => setView("all")}
       />
       {view === "all" && (
@@ -408,6 +414,7 @@ export default function App() {
       {view === "help" && <HelpView />}
       {view === "settings" && <SettingsView />}
       {view === "commands" && <CommandsView />}
+      {fieldnotesOpened && <FieldnotesView visible={view === "fieldnotes"} />}
 
       {/* Keep all workspace grids mounted so terminals never restart */}
       {workspaces.map((ws) => (

@@ -27,7 +27,7 @@ export default function AllRunningView({ workspaces, tabMeta, onOpenWorkspace }:
     const list: Entry[] = [];
     for (const workspace of workspaces) {
       for (const panel of workspace.panels) {
-        if (panel.type === "launcher" || panel.type === "usage") continue;
+        if (panel.type === "launcher" || panel.type === "usage" || panel.type === "fieldnotes") continue;
         for (const tab of panel.tabs) list.push({ tab, workspace });
       }
     }

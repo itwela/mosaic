@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Personal Fieldnotes client data stays on this computer
+public/fieldnotes/my-clients.js
+public/fieldnotes/workstreams-data.js

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { invoke } from "@tauri-apps/api/core";
+import { setTheme, THEMES, useTheme } from "../lib/theme";
 import "./SettingsView.css";
 
 export default function SettingsView() {
+  const theme = useTheme();
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +45,24 @@ export default function SettingsView() {
       <div className="settings-card">
         <div className="settings-eyebrow">Settings</div>
         <h1 className="settings-title">Preferences</h1>
+
+        <div className="settings-section">
+          <div className="settings-section-label">Theme</div>
+          <div className="theme-options">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                className={`theme-option ${theme === t.id ? "theme-option-active" : ""}`}
+                onClick={() => setTheme(t.id)}
+                aria-pressed={theme === t.id}
+              >
+                <span className={`theme-swatch theme-swatch-${t.id}`} />
+                <span className="theme-option-name">{t.name}</span>
+                <span className="theme-option-desc">{t.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="settings-section">
           <div className="settings-section-label">Startup</div>

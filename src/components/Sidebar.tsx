@@ -48,6 +48,7 @@ interface Props {
   onHelp: () => void;
   onAbout: () => void;
   onCommands: () => void;
+  onFieldnotes: () => void;
   onAllRunning: () => void;
 }
 
@@ -67,6 +68,7 @@ export default function Sidebar({
   onHelp,
   onAbout,
   onCommands,
+  onFieldnotes,
   onAllRunning,
 }: Props) {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("mosaic-sidebar-collapsed") === "true");
@@ -334,6 +336,18 @@ export default function Sidebar({
           <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
         </svg>
         <span className="sidebar-action-label">Commands</span>
+      </button>
+
+      <button
+        className={`commands-nav-btn ${view === "fieldnotes" ? "commands-nav-active" : ""}`}
+        onClick={onFieldnotes}
+        title="Field notes · client checklists"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h12l4 4v12H4z" />
+          <path d="M8 12l2.5 2.5L16 9" />
+        </svg>
+        <span className="sidebar-action-label">Field notes</span>
       </button>
 
       <button className="add-workspace-btn" onClick={handleAdd}>

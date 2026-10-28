@@ -615,3 +615,32 @@
   text-transform: uppercase;
   color: var(--accent);
 }
+
+/* ── Narrow windows ─────────────────────────────────────────────
+   Sized by the pane, not the screen: search takes its own row, the
+   sort buttons share the next, and a card's actions float over it on
+   hover instead of squeezing the name to nothing. */
+.launcher-panel { container-type: inline-size; }
+
+@container (max-width: 360px) {
+  .launcher-toolbar { flex-wrap: wrap; padding: 8px; gap: 6px; }
+  .launcher-search-wrap { flex: 1 1 100%; }
+  .launcher-sort-group { flex: 1 1 100%; }
+  .launcher-sort-btn { flex: 1; text-align: center; }
+  .launcher-body { padding: 8px; }
+  .launcher-card { position: relative; gap: 10px; padding: 8px 10px; }
+  .launcher-card-icon { width: 30px; height: 30px; }
+  .launcher-card-actions {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+  }
+  .launcher-card:hover .launcher-card-actions { pointer-events: auto; }
+  .launcher-label { max-width: 90px; }
+}

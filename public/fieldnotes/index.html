@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141312"><title>Fieldnotes · Client checklists</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mosaic-skin.css">
+  <link rel="stylesheet" href="aero-skin.css">
+</head>
+<body>
+  <main class="shell">
+    <div class="top-shell">
+      <header class="masthead">
+        <div class="brand">
+          <span class="mark"></span>
+          <div>
+            <div class="eyebrow" id="masthead-eyebrow">FIELDNOTES</div>
+            <h1>Fieldnotes</h1>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="client-control">
+            <span class="client-label">Client:</span>
+            <div class="client-select-wrap">
+              <select id="client-select" class="client-select" aria-label="Switch Client"></select>
+              <span class="client-select-arrow">▾</span>
+            </div>
+            <button id="add-client-btn" class="client-add-btn" type="button" title="Add a new client">+ Client</button>
+          </div>
+          <div class="save-state"><span class="save-dot"></span><span id="save-label">Saved on this device</span></div>
+        </div>
+      </header>
+      <nav class="tabs" id="tabs" aria-label="Checklists"></nav>
+      <div class="toolbar">
+        <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search tasks and notes" aria-label="Search tasks and notes"></label>
+        <button class="filter-cycle" id="filter-cycle" type="button">All items</button>
+        <button class="filter-cycle" id="sort-cycle" type="button" title="Click to choose which status comes first">Sort · list order</button>
+        <details class="file-menu" id="file-menu">
+          <summary class="button">File ▾</summary>
+          <div class="file-menu-panel" role="menu">
+            <span class="file-menu-label">PDF</span>
+            <button class="file-menu-item" id="pdf-list" role="menuitem" title="Save this checklist, with notes and screenshots, as a PDF in Downloads">This list</button>
+            <button class="file-menu-item" id="pdf-all" role="menuitem" title="Save every list for this client, organized by list, as one PDF in Downloads">All lists</button>
+            <span class="file-menu-label">Backup</span>
+            <button class="file-menu-item" id="export" role="menuitem" title="Export this client, with notes and screenshots, to Downloads">Export client</button>
+            <button class="file-menu-item" id="export-all" role="menuitem" title="Export every client to one file in Downloads">Export all</button>
+            <button class="file-menu-item" id="import" role="menuitem" title="Import a Fieldnotes export. Replaces progress for the clients it contains.">Import…</button>
+            <span class="file-menu-label">Other</span>
+            <button class="file-menu-item" id="print" role="menuitem">Print</button>
+          </div>
+        </details>
+        <div class="zoom-controls" role="group" aria-label="App zoom">
+          <button class="zoom-button" id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out (⌘−)">−</button>
+          <button class="zoom-level" id="zoom-reset" type="button" aria-label="Reset zoom to 100%" title="Reset zoom (⌘0)">100%</button>
+          <button class="zoom-button" id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in (⌘+)">+</button>
+        </div>
+      </div>
+      <section class="summary" id="summary"></section>
+      <div class="list-heading">
+        <div>
+          <span class="eyebrow" id="list-kicker">PHASE 1</span>
+          <h2 id="list-title"></h2>
+        </div>
+        <div class="heading-actions">
+          <button id="add-task-btn" class="button add-task-btn" type="button" title="Add item to current checklist">+ Add Item</button>
+          <span class="count" id="item-count"></span>
+        </div>
+      </div>
+    </div>
+    <div id="list" class="list"></div>
+    <p id="empty" class="empty" hidden>No items match this view.</p>
+    <footer>Changes save automatically on this device. Use Export client or Export all to move clients to another machine, then Import there.</footer>
+  </main>
+  <input id="import-picker" type="file" accept=".json,application/json" hidden>
+  <input id="evidence-picker" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+  <dialog id="note-dialog" class="note-dialog">
+    <form method="dialog" novalidate>
+      <div class="dialog-head">
+        <strong>Checklist note</strong>
+        <button type="button" class="icon-button" data-close aria-label="Close">×</button>
+      </div>
+      <textarea id="note-input" placeholder="Add a note or observation…"></textarea>
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="button" class="button primary" id="save-note">Save note</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="image-viewer" class="image-viewer"><img alt=""></dialog>
+  <dialog id="detail-dialog" class="detail-dialog">
+    <form method="dialog" novalidate>
+      <div class="dialog-head">
+        <strong id="detail-title">Task details</strong>
+        <button type="button" class="icon-button" data-close aria-label="Close details">×</button>
+      </div>
+      <p id="detail-copy" class="detail-copy"></p>
+    </form>
+  </dialog>
+  <dialog id="client-dialog" class="note-dialog">
+    <form method="dialog" novalidate>
+      <div class="dialog-head">
+        <strong>Create New Client</strong>
+        <button type="button" class="icon-button" data-close aria-label="Close">×</button>
+      </div>
+      <div class="dialog-fields">
+        <label class="form-field">
+          <span class="field-label">Client Name</span>
+          <input type="text" id="new-client-name" class="text-input" placeholder="e.g. Acme Studio">
+        </label>
+        <label class="form-field">
+          <span class="field-label">Header Tagline (optional)</span>
+          <input type="text" id="new-client-eyebrow" class="text-input" placeholder="e.g. CAVEMAN CREATIVE · CLIENT">
+        </label>
+        <label class="form-field">
+          <span class="field-label">Initial Checklist Name</span>
+          <input type="text" id="new-client-first-tab" class="text-input" placeholder="e.g. Scope & Deliverables">
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="button" class="button primary" id="save-client-btn">Create Client</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="task-dialog" class="note-dialog">
+    <form method="dialog" novalidate>
+      <div class="dialog-head">
+        <strong id="task-dialog-heading">Add Checklist Item</strong>
+        <button type="button" class="icon-button" data-close aria-label="Close">×</button>
+      </div>
+      <div class="dialog-fields">
+        <label class="form-field">
+          <span class="field-label">Item Title</span>
+          <input type="text" id="new-task-title" class="text-input" placeholder="Task description…">
+        </label>
+        <label class="form-field">
+          <span class="field-label">Details / Notes (optional)</span>
+          <textarea id="new-task-desc" class="text-input textarea" placeholder="Extra context or acceptance criteria…"></textarea>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="button" class="button primary" id="save-task-btn">Add Item</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="mosaic-bridge.js"></script>
+  <script src="jspdf.umd.min.js"></script>
+  <script src="workstreams-data.js"></script>
+  <script src="my-clients.js"></script>
+  <script src="app.js"></script>
+  <script src="mosaic-client-menu.js"></script>
+</body>
+</html>

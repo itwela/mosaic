@@ -20,10 +20,12 @@ export interface LaunchItem {
 
 export interface Panel {
   id: string;
-  type?: "terminal" | "launcher" | "usage";
+  type?: "terminal" | "launcher" | "usage" | "fieldnotes";
   // terminal
   tabs: Tab[];
   activeTabId: string;
+  // fieldnotes: keys the pane's own client/list; unlike id it survives restarts
+  viewId?: string;
   // launcher
   name?: string;
   launchItems?: LaunchItem[];

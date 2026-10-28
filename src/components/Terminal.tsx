@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { Terminal as XTerm } from "@xterm/xterm";
+import { getTheme, ThemeId, useTheme } from "../lib/theme";
+import { ITheme, Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -71,6 +72,55 @@ export function releaseTerminal(id: string, host: HTMLElement) {
 // it can actually run, quoting only when the path has something the shell would
 // otherwise interpret.
 
+// xterm paints its own opaque background, so each app theme gets a palette
+// whose background matches that theme's .terminal-panel exactly.
+const TERMINAL_THEMES: Record<ThemeId, ITheme> = {
+  mosaic: {
+    background: "#0e0a07",
+    foreground: "#F6F0E6",
+    cursor: "#c97d3a",
+    selectionBackground: "#c97d3a40",
+    black: "#1e1410",
+    brightBlack: "#4a3523",
+    red: "#c94a3a",
+    brightRed: "#e05a48",
+    green: "#8aab6a",
+    brightGreen: "#9dbf7a",
+    yellow: "#c97d3a",
+    brightYellow: "#dfa050",
+    blue: "#7a9cbf",
+    brightBlue: "#90b4d8",
+    magenta: "#b07a8a",
+    brightMagenta: "#c88a9a",
+    cyan: "#7aab9c",
+    brightCyan: "#8ac0b0",
+    white: "#F6F0E6",
+    brightWhite: "#ffffff",
+  },
+  aero: {
+    background: "#0b2c4d",
+    foreground: "#eaf6ff",
+    cursor: "#7fe0ff",
+    selectionBackground: "#7fd4ff55",
+    black: "#082240",
+    brightBlack: "#4f7aa3",
+    red: "#ff7a8a",
+    brightRed: "#ff9aa6",
+    green: "#8fe86a",
+    brightGreen: "#b4f58f",
+    yellow: "#ffe07a",
+    brightYellow: "#fff0a8",
+    blue: "#6cc4ff",
+    brightBlue: "#a2dcff",
+    magenta: "#d59cff",
+    brightMagenta: "#e6bfff",
+    cyan: "#5ff0e0",
+    brightCyan: "#9cfff3",
+    white: "#eaf6ff",
+    brightWhite: "#ffffff",
+  },
+};
+
 const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, active, cwd }, ref) {
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +130,11 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
   const prevCwdRef = useRef<string | undefined>(cwd);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const theme = useTheme();
+
+  useEffect(() => {
+    if (termRef.current) termRef.current.options.theme = TERMINAL_THEMES[theme];
+  }, [theme]);
 
   useImperativeHandle(ref, () => ({
     clear: () => {
@@ -98,28 +153,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     if (!containerRef.current) return;
 
     const term = new XTerm({
-      theme: {
-        background: "#0e0a07",
-        foreground: "#F6F0E6",
-        cursor: "#c97d3a",
-        selectionBackground: "#c97d3a40",
-        black: "#1e1410",
-        brightBlack: "#4a3523",
-        red: "#c94a3a",
-        brightRed: "#e05a48",
-        green: "#8aab6a",
-        brightGreen: "#9dbf7a",
-        yellow: "#c97d3a",
-        brightYellow: "#dfa050",
-        blue: "#7a9cbf",
-        brightBlue: "#90b4d8",
-        magenta: "#b07a8a",
-        brightMagenta: "#c88a9a",
-        cyan: "#7aab9c",
-        brightCyan: "#8ac0b0",
-        white: "#F6F0E6",
-        brightWhite: "#ffffff",
-      },
+      theme: TERMINAL_THEMES[getTheme()],
       fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", monospace',
       fontSize: 13,
       lineHeight: 1.4,

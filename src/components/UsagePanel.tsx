@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import "./UsagePanel.css";
 
@@ -29,6 +30,17 @@ interface Provider {
 }
 
 const REFRESH_MS = 5 * 60 * 1000;
+const ORDER_KEY = "mosaic-usage-order";
+
+function loadOrder(): string[] {
+  try { return JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch { return []; }
+}
+
+// Providers in the order the user dragged them into; new ones go last.
+function sortByOrder<T extends { key: string }>(items: T[], order: string[]): T[] {
+  const rank = (k: string) => { const i = order.indexOf(k); return i === -1 ? order.length : i; };
+  return [...items].sort((a, b) => rank(a.key) - rank(b.key));
+}
 
 function windowLabel(minutes: number): string {
   if (minutes === 300) return "5-hour";
@@ -159,6 +171,46 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [, tick] = useState(0);
 
+  const [order, setOrder] = useState<string[]>(loadOrder);
+  const [drag, setDrag] = useState<{ key: string; x: number; y: number; over: string | null } | null>(null);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
+  const keysRef = useRef<string[]>([]);
+
+  // Pointer-driven drag (the webview's native drag-drop is taken by file drops):
+  // grab a card's header, drop it on another card to swap their places.
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: PointerEvent) => {
+      const card = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-usage-key]");
+      const over = card?.dataset.usageKey ?? null;
+      setDrag((d) => d && { ...d, x: e.clientX, y: e.clientY, over: over === d.key ? null : over });
+    };
+    const onUp = () => {
+      const d = dragRef.current;
+      setDrag(null);
+      if (!d?.over) return;
+      const keys = [...keysRef.current];
+      const from = keys.indexOf(d.key);
+      const to = keys.indexOf(d.over);
+      if (from === -1 || to === -1) return;
+      [keys[from], keys[to]] = [keys[to], keys[from]];
+      try { localStorage.setItem(ORDER_KEY, JSON.stringify(keys)); } catch {}
+      setOrder(keys);
+    };
+    const noSelect = (e: Event) => e.preventDefault();
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    document.addEventListener("selectstart", noSelect);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      document.removeEventListener("selectstart", noSelect);
+    };
+  }, [drag?.key]);
+
   const refresh = useCallback(async () => {
     if (!isTauri()) return;
     setLoading(true);
@@ -181,13 +233,14 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [refresh]);
 
-  const providers = [
+  const providers = sortByOrder([
     claudeProvider(results.claude),
     codexProvider(results.codex),
     cursorProvider(results.cursor),
     antigravityProvider(results.antigravity),
     deepseekProvider(results.deepseek),
-  ];
+  ], order);
+  keysRef.current = providers.map((p) => p.key);
 
   return (
     <div className="launcher-panel usage-panel">
@@ -217,8 +270,20 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
 
       <div className="usage-body">
         {providers.map((p) => (
-          <section key={p.key} className="usage-card">
-            <header className="usage-card-head">
+          <section
+            key={p.key}
+            data-usage-key={p.key}
+            className={`usage-card ${drag?.key === p.key ? "usage-card-dragging" : ""} ${drag?.over === p.key ? "usage-card-target" : ""}`}
+          >
+            <header
+              className="usage-card-head"
+              title="Drag to reorder"
+              onPointerDown={(e) => {
+                if (e.button !== 0 || (e.target as HTMLElement).closest("button, input")) return;
+                e.preventDefault();
+                setDrag({ key: p.key, x: e.clientX, y: e.clientY, over: null });
+              }}
+            >
               {p.logo ? <img src={p.logo} alt="" className="usage-logo" /> : <span className="usage-logo usage-glyph">{p.name[0]}</span>}
               <span className="usage-name">{p.name}</span>
               {p.plan && <span className="usage-plan">{p.plan}</span>}
@@ -262,6 +327,15 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
           </section>
         ))}
       </div>
+      {drag && createPortal(
+        <div className="usage-drag-ghost" style={{ left: drag.x, top: drag.y }}>
+          {(() => {
+            const p = providers.find((x) => x.key === drag.key);
+            return p ? <>{p.logo && <img src={p.logo} alt="" />}{p.name}</> : null;
+          })()}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

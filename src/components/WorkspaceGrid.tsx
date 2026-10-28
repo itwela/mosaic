@@ -8,7 +8,8 @@ import ScreenshotBar from "./ScreenshotBar";
 import TerminalPanel from "./TerminalPanel";
 import LauncherPanel from "./LauncherPanel";
 import UsagePanel from "./UsagePanel";
-import { makePanel, makeLauncherPanel, makeUsagePanel, restorePanel } from "../store/workspaces";
+import FieldnotesPanel from "./FieldnotesPanel";
+import { makePanel, makeLauncherPanel, makeUsagePanel, makeFieldnotesPanel, restorePanel } from "../store/workspaces";
 import { pushUndo } from "../store/undo";
 import "./WorkspaceGrid.css";
 
@@ -56,6 +57,10 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
     onUpdate({ ...workspace, panels: [...panels, makeLauncherPanel()] });
   }
 
+  function addFieldnotes() {
+    onUpdate({ ...workspace, panels: [...panels, makeFieldnotesPanel()] });
+  }
+
   function addUsage() {
     onUpdate({ ...workspace, panels: [...panels, makeUsagePanel()] });
   }
@@ -86,7 +91,7 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
     onUpdate({ ...workspace, panels: panels.filter((p) => p.id !== id) });
     // Shells keep running until the undo window closes, so Undo brings them back live.
     pushUndo(
-      `Closed ${panel.type === "launcher" ? `launcher "${panel.name || "Launcher"}"` : panel.type === "usage" ? "usage panel" : "terminal panel"}`,
+      `Closed ${panel.type === "launcher" ? `launcher "${panel.name || "Launcher"}"` : panel.type === "usage" ? "usage panel" : panel.type === "fieldnotes" ? "field notes panel" : "terminal panel"}`,
       () => restorePanel(workspace.id, index, panel),
       () => {
         for (const tab of panel.tabs) invoke("pty_kill", { id: tab.id }).catch(console.error);
@@ -157,6 +162,7 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
   function panelLabel(panel: PanelType): string {
     if (panel.type === "launcher") return panel.name || "Launcher";
     if (panel.type === "usage") return "Usage";
+    if (panel.type === "fieldnotes") return "Field notes";
     const active = panel.tabs.find((t) => t.id === panel.activeTabId) ?? panel.tabs[0];
     return active?.title || "Terminal";
   }
@@ -188,6 +194,7 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
                 <button onClick={() => { setMenuOpen(false); addPanel(); }}>Terminal</button>
                 <button onClick={() => { setMenuOpen(false); addLauncher(); }}>Launcher board</button>
                 <button onClick={() => { setMenuOpen(false); addUsage(); }}>AI usage</button>
+                <button onClick={() => { setMenuOpen(false); addFieldnotes(); }}>Field notes</button>
               </div>
             )}
           </div>
@@ -218,7 +225,9 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
                             data-panel-index={flatIndex}
                           >
                             <div className="window-frame">
-                              {panel.type === "usage"
+                              {panel.type === "fieldnotes"
+                                ? <FieldnotesPanel viewId={panel.viewId ?? panel.id} panelIndex={flatIndex} active={active} onReorderStart={startReorder} onClosePanel={() => removePanel(panel.id)} />
+                                : panel.type === "usage"
                                 ? <UsagePanel panelIndex={flatIndex} onReorderStart={startReorder} onClosePanel={() => removePanel(panel.id)} />
                                 : panel.type === "launcher"
                                 ? <LauncherPanel panel={panel} panelIndex={flatIndex} onReorderStart={startReorder} onUpdate={updatePanel} onClosePanel={() => removePanel(panel.id)} />

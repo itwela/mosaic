@@ -1,0 +1,450 @@
+/* Mosaic stained-glass skin for Fieldnotes. Loaded after style.css.
+   Mirrors Mosaic's page treatment (luxury.css "Pages"): the wall shows through
+   dimmed, and everything sits inside one glass window framed in lead. */
+
+:root {
+  font-family: "DM Sans", -apple-system, sans-serif;
+  background: transparent;
+  color: #f4eee4;
+  --ink: #f4eee4;
+  --muted: #c4baab;
+  --dim: #8e8475;
+  --line: rgba(255, 255, 255, 0.07);
+  --panel: rgba(255, 255, 255, 0.035);
+  --raised: rgba(150, 160, 176, 0.25);
+  --ember: #d4dae3;
+  --ember-bright: #ffffff;
+  --cold: #6a8fd0;
+  --hot: #d4dae3;
+  --lead: #0c0a08;
+  --piece: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.12)), rgba(30, 26, 21, 0.8);
+  --piece-hot: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.1)), rgba(150, 160, 176, 0.6);
+}
+
+html, body { background: transparent; min-height: 100%; }
+body { padding: 28px 24px; color: var(--ink); }
+
+/* ── The glass window ─────────────────────────────────────────── */
+
+.shell {
+  max-width: 1120px;
+  padding: 0 28px 24px;
+  border: 5px solid var(--lead);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 120px),
+    rgba(14, 12, 10, 0.86);
+  box-shadow:
+    inset 0 0 0 1px rgba(225, 230, 238, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.top-shell {
+  top: -28px;
+  margin: 0 -28px;
+  padding: 0 28px 12px;
+  border-radius: 1px 1px 0 0;
+  background: rgba(16, 13, 11, 0.96);
+  backdrop-filter: blur(14px);
+  border-bottom: 2px solid var(--lead);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ── Masthead ─────────────────────────────────────────────────── */
+
+.masthead { height: 76px; border-bottom: 1px solid var(--line); }
+.mark { display: none; }
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ember);
+}
+.masthead h1 {
+  font-family: "Jomhuria", serif;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 0.75;
+  letter-spacing: 0;
+  margin-top: 6px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.client-label { color: var(--dim); }
+.save-state { color: var(--dim); }
+.save-dot { background: #7fbf8f; box-shadow: 0 0 6px rgba(127, 191, 143, 0.7); }
+
+/* ── Glass pieces: buttons, pills, selects ────────────────────── */
+
+.button, .filter-cycle, .client-select, .client-add-btn, .add-task-btn,
+.zoom-button, .zoom-level, .file-menu summary, .detail-trigger,
+.note-trigger, .evidence-trigger, .status-button {
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background: var(--piece);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+}
+.button:hover, .filter-cycle:hover, .client-add-btn:hover, .add-task-btn:hover,
+.zoom-button:hover, .zoom-level:hover, .detail-trigger:hover, .note-trigger:hover,
+.evidence-trigger:hover, .status-button:hover, .client-select:hover {
+  background: var(--piece-hot);
+  color: #fff;
+}
+.zoom-controls { gap: 0; border: none; background: none; }
+
+.button.primary {
+  background: linear-gradient(180deg, #eef1f5, #9aa3b0);
+  color: #0c0a08;
+  box-shadow: 0 0 10px rgba(210, 218, 230, 0.3);
+}
+.button.primary:hover { background: linear-gradient(180deg, #fff, #b4bcc8); color: #0c0a08; }
+
+/* Search + text fields: clear glass in lead */
+.search input, .text-input, .note-dialog textarea {
+  border: 2px solid var(--lead) !important;
+  border-radius: 4px;
+  background: rgba(4, 3, 2, 0.55) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+}
+.search input:focus-visible, .text-input:focus-visible, .note-dialog textarea:focus-visible {
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(220, 226, 236, 0.6);
+}
+.status-button:focus-visible, .button:focus-visible, .tab:focus-visible,
+select:focus-visible, .workstream > summary:focus-visible {
+  outline: 1px solid rgba(220, 226, 236, 0.7);
+  outline-offset: 1px;
+}
+
+/* ── Checklist tabs ───────────────────────────────────────────── */
+
+.tab, .tab[data-complete="true"] {
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background: var(--piece);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+}
+.tab:hover { background: var(--piece-hot); color: #fff; }
+.tab.active, .tab[data-complete="true"].active {
+  color: #fff;
+  background: var(--piece-hot);
+}
+
+/* ── Summary ──────────────────────────────────────────────────── */
+
+.progress {
+  height: 6px;
+  border: 1.5px solid var(--lead);
+  background: rgba(4, 3, 2, 0.6);
+}
+.progress i { background: linear-gradient(90deg, #6a8fd0, #a78bfa, #e0603f, #e0a03a, #7fbf8f); }
+.list-heading { height: 56px; }
+.list-heading h2 { font-family: "Jomhuria", serif; font-weight: 400; font-size: 30px; line-height: 0.8; margin-top: 6px; }
+
+/* ── Workstreams: inset panes, items as tinted glass tiles ────── */
+
+.workstream, .workstream[data-complete="true"] {
+  border: 2px solid var(--lead);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 4px 14px rgba(0, 0, 0, 0.3);
+  backdrop-filter: none;
+  overflow: hidden;
+}
+.workstream > summary, .workstream[data-complete="true"] > summary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.1));
+}
+.workstream > summary:hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.08)); }
+.workstream[open] > summary { border-bottom: 2px solid var(--lead); }
+.group-number { color: var(--dim); }
+.group-title { font-weight: 600; color: var(--ink); }
+.group-items { padding: 8px; display: grid; gap: 6px; background: rgba(0, 0, 0, 0.2); }
+
+.item {
+  --heat: #5c6b7a;
+  border: 1.5px solid var(--lead) !important;
+  border-radius: 4px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07), transparent 40%, rgba(0, 0, 0, 0.18)),
+    color-mix(in srgb, var(--heat) 14%, rgba(14, 12, 10, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 3px 0 0 var(--heat);
+}
+.item:last-child { border-bottom: 1.5px solid var(--lead); }
+.item[data-status=in-progress] { --heat: #6a8fd0; }
+.item[data-status=done] { --heat: #7fbf8f; }
+.item[data-status=blocked] { --heat: #e0603f; }
+.item[data-status=done] .item-title, .item[data-status=done] .item-title:after { color: #a9d8b6; }
+
+.status-button[data-state=in-progress] { color: #b4c9f0; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.12)), rgba(106, 143, 208, 0.45); }
+.status-button[data-state=done] { color: #d8f0de; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.12)), rgba(79, 154, 106, 0.5); }
+.status-button[data-state=blocked] { color: #ffd8cf; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.12)), rgba(180, 50, 35, 0.55); }
+
+.note-preview { color: var(--muted); }
+.drop-target { box-shadow: 0 0 0 2px #e4e8ee, 0 0 12px rgba(228, 232, 238, 0.45) !important; }
+.attachment img { border: 2px solid var(--lead); }
+
+/* ── Dialogs + file menu: a glass window over smoked glass ────── */
+
+.note-dialog, .detail-dialog, .file-menu-panel {
+  border: 5px solid var(--lead);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 90px), rgba(16, 13, 11, 0.97);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px rgba(225, 230, 238, 0.18), 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+.note-dialog::backdrop, .detail-dialog::backdrop, .image-viewer::backdrop { background: rgba(6, 5, 4, 0.62); }
+.dialog-head strong { font-family: "Jomhuria", serif; font-weight: 400; font-size: 30px; line-height: 0.8; }
+
+footer { border-top: 1px solid var(--line); color: var(--dim); }
+
+/* Finished lists glow green instead of ember */
+.save-dot { background: #7fbf8f !important; box-shadow: 0 0 6px rgba(127, 191, 143, 0.7) !important; }
+.group-progress[data-state="done"], .tab-badge[data-state="done"] {
+  background: rgba(79, 154, 106, 0.55) !important;
+  border: 1.5px solid var(--lead) !important;
+  color: #e4f5e8 !important;
+}
+.group-progress[data-state="active"], .tab-badge[data-state="active"] {
+  background: rgba(106, 143, 208, 0.3) !important;
+  border: 1.5px solid var(--lead) !important;
+  color: #d4e0f5 !important;
+}
+.tab, .workstream > summary { --hot: #7fbf8f; --cold: #6a8fd0; }
+
+.item { padding-left: 14px; }
+
+/* Match the Commands page window: centered, 960 wide, same insets and type scale */
+body { padding: 40px 24px; }
+.shell { max-width: 960px; margin: 0 auto; padding: 0 28px 28px; }
+.top-shell { top: -40px; margin: 0 -28px; padding: 0 28px 12px; }
+.masthead { height: auto; padding: 28px 0 18px; align-items: flex-start; }
+.masthead h1 { font-size: 32px; line-height: 1; margin-top: 4px; }
+.list-heading h2 { font-size: 26px; line-height: 1; }
+
+/* Fixed window, equal space above and below; only the list scrolls inside it */
+html, body { height: 100%; overflow: hidden; }
+body { padding: 40px 24px; box-sizing: border-box; display: flex; }
+.shell {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.top-shell { position: static; flex: none; }
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -28px;
+  padding: 10px 28px 24px;
+}
+.empty { flex: none; }
+footer { flex: none; margin: 0; padding: 12px 0 14px; }
+
+/* Full-area image preview. vw/vh get scaled by the app's CSS zoom, so pin to
+   the edges instead; that stays centered at any zoom level. */
+.image-viewer {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 32px;
+  box-sizing: border-box;
+}
+.image-viewer img {
+  border: 5px solid var(--lead);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+/* As a workspace pane the window frame comes from Mosaic, so fill it edge to edge */
+.in-pane body { padding: 0; }
+.in-pane .shell {
+  max-width: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 16px;
+  background: #0e0a07;
+}
+.in-pane .top-shell { margin: 0 -16px; padding: 0 16px 10px; }
+.in-pane .masthead { padding: 14px 0 12px; flex-wrap: wrap; gap: 10px; }
+.in-pane .masthead h1 { font-size: 26px; }
+.in-pane .header-right { flex-wrap: wrap; gap: 10px; }
+.in-pane .list { margin: 0 -16px; padding: 8px 16px 16px; }
+.in-pane footer { display: none; }
+
+/* ── Dropdowns: File menu + client picker, a glass pane in lead ─ */
+
+.file-menu-panel, .client-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 2px solid var(--lead) !important;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.1)),
+    rgba(22, 21, 22, 0.98) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(228, 232, 238, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.6) !important;
+}
+.file-menu-panel { right: 0; }
+.client-menu-panel { left: 0; right: 0; }
+.file-menu-label {
+  padding: 8px 10px 4px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--ember);
+}
+.file-menu-label:not(:first-child) { margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 10px; }
+.file-menu-item, .client-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid transparent !important;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.file-menu-item:hover, .file-menu-item:focus-visible,
+.client-menu-item:hover, .client-menu-item:focus-visible {
+  outline: none;
+  color: #fff;
+  border-color: var(--lead) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.1)),
+    rgba(110, 118, 132, 0.45);
+}
+.client-menu-item[aria-selected="true"] { color: #fff; }
+.client-menu-item::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; border: 1.5px solid var(--dim); }
+.client-menu-item[aria-selected="true"]::before { background: #7fbf8f; border-color: var(--lead); box-shadow: 0 0 6px rgba(127, 191, 143, 0.7); }
+.file-menu[open] > summary { background: var(--piece-hot); color: #fff; }
+
+/* the native select stays in the DOM for app.js, just out of sight */
+.client-menu { position: relative; }
+.client-menu .client-select, .client-menu .client-select-arrow { display: none; }
+.client-menu-button {
+  height: 32px;
+  min-width: 190px;
+  padding: 0 30px 0 12px;
+  border: 1.5px solid var(--lead);
+  border-radius: 4px;
+  background: var(--piece);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+.client-menu-button::after {
+  content: "▾";
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--dim);
+}
+.client-menu-button:hover, .client-menu.open .client-menu-button { background: var(--piece-hot); color: #fff; }
+.client-menu-button:focus-visible { outline: 1px solid rgba(220, 226, 236, 0.7); outline-offset: 1px; }
+
+/* Progress bars: blue while in progress, green only once everything is done */
+.tab-progress-bar, .group-progress-bar { background: #6a8fd0 !important; box-shadow: none !important; opacity: 0.9; }
+.tab[data-complete="true"] .tab-progress-bar,
+.workstream[data-complete="true"] .group-progress-bar { background: #7fbf8f !important; box-shadow: 0 0 6px rgba(127, 191, 143, 0.5) !important; }
+.workstream[data-complete="true"] .group-number { color: #7fbf8f; }
+
+.client-menu-panel[hidden] { display: none !important; }
+
+/* ── Narrow / short windows (workspace panes) ─────────────────────
+   The header would otherwise eat the pane, so it all scrolls as one
+   column and every row gets out of the way of the next. */
+@media (max-width: 600px), (max-height: 560px) {
+  .shell { overflow-y: auto; }
+  .top-shell { position: static; }
+  .list { flex: none; overflow: visible; }
+}
+
+@media (max-width: 600px) {
+  body { padding: 0; }
+  .shell { border-radius: 0; border-width: 0; padding: 0 12px; }
+  .top-shell { margin: 0 -12px; padding: 0 12px 8px; }
+  .list { margin: 0 -12px; padding: 8px 12px 14px; }
+
+  .masthead { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 0 10px; }
+  .brand { min-width: 0; }
+  .brand > div { min-width: 0; }
+  .eyebrow { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .masthead h1 { font-size: 26px; }
+  .header-right { width: 100%; gap: 6px; }
+  .client-control { flex: 1; min-width: 0; gap: 6px; }
+  .client-label, .save-state { display: none; }
+  .client-menu { flex: 1; min-width: 0; }
+  .client-menu-button { width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 6px 0; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: none; }
+
+  .toolbar { flex-wrap: wrap; gap: 6px; }
+  .toolbar .search { flex: 1 1 100%; }
+  .toolbar .filter-cycle, .toolbar .file-menu { flex: 1; }
+  .toolbar .file-menu > summary { justify-content: center; }
+  .zoom-controls { display: none; }
+
+  .summary { height: auto; }
+  .summary-line { flex-wrap: wrap; gap: 6px 12px; }
+  .progress { flex: 1 1 100%; }
+
+  .list-heading { height: auto; padding: 10px 0 4px; gap: 10px; align-items: flex-end; }
+  .list-heading > div:first-child { min-width: 0; flex: 1; }
+  .list-heading h2 { font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .heading-actions .count { display: none; }
+
+  .workstream > summary { gap: 8px; }
+  .group-title { min-width: 0; }
+}
+
+/* long section titles wrap inside a row that grows with them */
+.workstream > summary { height: auto; min-height: 42px; padding-top: 8px; padding-bottom: 8px; }
+.group-title { line-height: 1.3; }
+
+/* never wider than the pane, however narrow it gets */
+html, body { overflow-x: hidden; }
+.shell, .top-shell, .list, .masthead, .header-right, .toolbar, .summary, .summary-line { min-width: 0; max-width: 100%; }
+@media (max-width: 600px) {
+  .summary-stats { flex-wrap: wrap; white-space: normal; gap: 4px 10px; }
+  .client-add-btn { flex: none; }
+}
+@media (max-width: 600px) {
+  .toolbar .search { min-width: 0; }
+  .in-pane .shell { padding: 0 10px; }
+  .in-pane .top-shell { margin: 0 -10px; padding: 0 10px 8px; }
+  .in-pane .list { margin: 0 -10px; padding: 8px 10px 14px; }
+  .shell { scrollbar-width: thin; }
+}

@@ -31,6 +31,10 @@ export function makeLauncherPanel(): Panel {
   return { id: uuidv4(), type: "launcher", tabs: [], activeTabId: "", launchItems: [] };
 }
 
+export function makeFieldnotesPanel(): Panel {
+  return { id: uuidv4(), type: "fieldnotes", tabs: [], activeTabId: "", viewId: uuidv4() };
+}
+
 export function makeUsagePanel(): Panel {
   return { id: uuidv4(), type: "usage", tabs: [], activeTabId: "" };
 }
@@ -49,6 +53,9 @@ export function freshIds(ws: Workspace): Workspace {
   return {
     ...ws,
     panels: ws.panels.map((panel) => {
+      if (panel.type === "fieldnotes") {
+        return { ...panel, id: uuidv4(), viewId: panel.viewId ?? panel.id };
+      }
       if (panel.type === "launcher" || panel.tabs.length === 0) {
         return { ...panel, id: uuidv4() };
       }

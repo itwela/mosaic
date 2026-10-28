@@ -1,0 +1,30 @@
+.fieldnotes-view {
+  flex: 1;
+  min-width: 0;
+  /* same dimmed wall as Mosaic's other pages; the iframe is transparent */
+  background: rgba(6, 5, 4, 0.35);
+}
+
+.fieldnotes-frame {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: transparent;
+  color-scheme: dark;
+}
+
+.fieldnotes-panel .fieldnotes-frame {
+  flex: 1;
+  min-height: 0;
+}
+
+.fieldnotes-panel-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+}

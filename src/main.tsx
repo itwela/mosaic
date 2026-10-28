@@ -1,5 +1,8 @@
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { applyTheme } from "./lib/theme";
+
+applyTheme();
 
 // NOTE: intentionally NOT wrapped in <React.StrictMode>. StrictMode double-
 // mounts every component in dev, and each Terminal mount spawns a real shell

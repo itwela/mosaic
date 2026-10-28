@@ -1,0 +1,291 @@
+/* Frutiger Aero skin for Fieldnotes, applied when Mosaic's theme is "aero"
+   (mosaic-bridge.js mirrors data-theme from the parent). Loaded after
+   mosaic-skin.css, so the stained-glass skin stays the default. */
+
+:root[data-theme="aero"] {
+  font-family: "Open Sans", "Segoe UI", sans-serif;
+  color: #0b3556;
+  --ink: #0b3556;
+  --muted: #3f6a8c;
+  --dim: #6f93b0;
+  --line: rgba(40, 120, 190, 0.2);
+  --ember: #0f86d8;
+  --lead: rgba(40, 120, 190, 0.45);
+  --piece: linear-gradient(180deg, #ffffff 0%, #eaf7ff 46%, #c9e9ff 50%, #e2f4ff 100%);
+  --piece-hot: linear-gradient(180deg, #ffffff 0%, #dff4ff 46%, #a8dcff 50%, #d2efff 100%);
+  --gel-blue: linear-gradient(180deg, #a6e2ff 0%, #4fbcff 46%, #1690e6 50%, #3fb2ff 100%);
+  --gel-green: linear-gradient(180deg, #d9ffc0 0%, #8fe25c 46%, #4fbf1f 50%, #7ad94a 100%);
+  --gel-red: linear-gradient(180deg, #ffc4bb 0%, #f37460 46%, #d2341c 50%, #ec6450 100%);
+  --edge: 1px solid rgba(40, 120, 190, 0.5);
+}
+
+/* ── The window ─────────────────────────────────────────────────── */
+
+:root[data-theme="aero"] .shell {
+  border: 1px solid rgba(20, 90, 160, 0.55);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 249, 255, 0.82) 160px, rgba(226, 243, 255, 0.78) 100%);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 18px 50px rgba(8, 60, 120, 0.35);
+}
+:root[data-theme="aero"] .top-shell {
+  border-radius: 11px 11px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(225, 243, 255, 0.7));
+  border-bottom: 1px solid rgba(40, 120, 190, 0.25);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-theme="aero"] .masthead { border-bottom-color: rgba(40, 120, 190, 0.18); }
+:root[data-theme="aero"] .masthead h1,
+:root[data-theme="aero"] .list-heading h2,
+:root[data-theme="aero"] .dialog-head strong {
+  font-family: "Open Sans", "Segoe UI", sans-serif;
+  font-weight: 300;
+  color: #0a4f86;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 0 #fff;
+}
+:root[data-theme="aero"] .masthead h1 { font-size: 30px; line-height: 1.1; }
+:root[data-theme="aero"] .list-heading h2 { font-size: 22px; line-height: 1.15; }
+:root[data-theme="aero"] .dialog-head strong { font-size: 20px; line-height: 1.2; }
+:root[data-theme="aero"] .eyebrow { color: #2e9a1a; font-weight: 700; }
+:root[data-theme="aero"] .client-label,
+:root[data-theme="aero"] .save-state,
+:root[data-theme="aero"] .summary-stats,
+:root[data-theme="aero"] .count,
+:root[data-theme="aero"] footer { color: var(--muted); }
+:root[data-theme="aero"] .summary-stats strong { color: var(--ink); }
+:root[data-theme="aero"] .save-dot {
+  background: radial-gradient(circle at 35% 30%, #e6ffd4, #5fcf2e 60%) !important;
+  box-shadow: 0 0 6px rgba(95, 207, 46, 0.8) !important;
+}
+
+/* ── Gel buttons ────────────────────────────────────────────────── */
+
+:root[data-theme="aero"] .button,
+:root[data-theme="aero"] .filter-cycle,
+:root[data-theme="aero"] .client-add-btn,
+:root[data-theme="aero"] .add-task-btn,
+:root[data-theme="aero"] .zoom-button,
+:root[data-theme="aero"] .zoom-level,
+:root[data-theme="aero"] .file-menu summary,
+:root[data-theme="aero"] .detail-trigger,
+:root[data-theme="aero"] .note-trigger,
+:root[data-theme="aero"] .evidence-trigger,
+:root[data-theme="aero"] .status-button,
+:root[data-theme="aero"] .tab,
+:root[data-theme="aero"] .tab[data-complete="true"],
+:root[data-theme="aero"] .client-menu-button {
+  border: var(--edge) !important;
+  border-radius: 7px;
+  background: var(--piece);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(8, 60, 120, 0.15);
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+:root[data-theme="aero"] .button:hover,
+:root[data-theme="aero"] .filter-cycle:hover,
+:root[data-theme="aero"] .client-add-btn:hover,
+:root[data-theme="aero"] .add-task-btn:hover,
+:root[data-theme="aero"] .zoom-button:hover,
+:root[data-theme="aero"] .zoom-level:hover,
+:root[data-theme="aero"] .detail-trigger:hover,
+:root[data-theme="aero"] .note-trigger:hover,
+:root[data-theme="aero"] .evidence-trigger:hover,
+:root[data-theme="aero"] .tab:hover,
+:root[data-theme="aero"] .client-menu-button:hover,
+:root[data-theme="aero"] .client-menu.open .client-menu-button,
+:root[data-theme="aero"] .file-menu[open] > summary {
+  background: var(--piece-hot);
+  color: var(--ink);
+  border-color: rgba(20, 130, 220, 0.75) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 0 10px rgba(54, 184, 255, 0.5);
+}
+:root[data-theme="aero"] .tab.active,
+:root[data-theme="aero"] .tab[data-complete="true"].active,
+:root[data-theme="aero"] .button.primary {
+  background: var(--gel-blue);
+  border-color: #0f6fbf !important;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 50, 110, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 12px rgba(54, 184, 255, 0.5);
+}
+:root[data-theme="aero"] .button.primary:hover { filter: brightness(1.08); background: var(--gel-blue); color: #fff; }
+:root[data-theme="aero"] .client-menu-button::after { color: var(--muted); }
+
+:root[data-theme="aero"] .search input,
+:root[data-theme="aero"] .text-input,
+:root[data-theme="aero"] .note-dialog textarea {
+  border: 1px solid rgba(40, 120, 190, 0.5) !important;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #f2f9ff, #ffffff 40%) !important;
+  box-shadow: inset 0 1px 3px rgba(8, 60, 120, 0.2) !important;
+  color: var(--ink);
+}
+:root[data-theme="aero"] .search input::placeholder { color: var(--dim); }
+:root[data-theme="aero"] .search input:focus-visible,
+:root[data-theme="aero"] .text-input:focus-visible,
+:root[data-theme="aero"] .note-dialog textarea:focus-visible {
+  border-color: #36b8ff !important;
+  box-shadow: inset 0 1px 3px rgba(8, 60, 120, 0.2), 0 0 0 3px rgba(54, 184, 255, 0.3) !important;
+}
+
+/* tab + group counters */
+:root[data-theme="aero"] .tab-badge,
+:root[data-theme="aero"] .group-progress { color: var(--muted); }
+:root[data-theme="aero"] .tab.active .tab-badge { color: #fff; }
+:root[data-theme="aero"] .group-progress[data-state="active"],
+:root[data-theme="aero"] .tab-badge[data-state="active"] {
+  background: linear-gradient(180deg, #ffffff, #d6efff) !important;
+  border: 1px solid rgba(40, 140, 220, 0.6) !important;
+  color: #0a5a99 !important;
+}
+:root[data-theme="aero"] .group-progress[data-state="done"],
+:root[data-theme="aero"] .tab-badge[data-state="done"] {
+  background: var(--gel-green) !important;
+  border: 1px solid #3c9a1e !important;
+  color: #fff !important;
+  text-shadow: 0 1px 1px rgba(20, 80, 0, 0.55);
+}
+
+/* progress: a glossy tube, aqua filling to green */
+:root[data-theme="aero"] .progress {
+  height: 8px;
+  border: 1px solid rgba(40, 120, 190, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #dbe9f4, #ffffff);
+  box-shadow: inset 0 1px 2px rgba(8, 60, 120, 0.25);
+}
+:root[data-theme="aero"] .progress i {
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(90deg, #1690e6, #36c8ff, #5fcf2e);
+}
+:root[data-theme="aero"] .tab-progress-bar,
+:root[data-theme="aero"] .group-progress-bar { background: #36b8ff !important; }
+:root[data-theme="aero"] .tab[data-complete="true"] .tab-progress-bar,
+:root[data-theme="aero"] .workstream[data-complete="true"] .group-progress-bar {
+  background: #5fcf2e !important;
+  box-shadow: 0 0 6px rgba(95, 207, 46, 0.6) !important;
+}
+
+/* ── Sections and items ─────────────────────────────────────────── */
+
+:root[data-theme="aero"] .workstream,
+:root[data-theme="aero"] .workstream[data-complete="true"] {
+  border: 1px solid rgba(40, 120, 190, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 #fff, 0 3px 12px rgba(8, 60, 120, 0.12);
+}
+:root[data-theme="aero"] .workstream > summary,
+:root[data-theme="aero"] .workstream[data-complete="true"] > summary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 249, 255, 0.85) 48%, rgba(222, 241, 255, 0.85) 52%, rgba(236, 248, 255, 0.9) 100%);
+}
+:root[data-theme="aero"] .workstream > summary:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e8f6ff 48%, #cfeaff 52%, #e2f3ff 100%);
+}
+:root[data-theme="aero"] .workstream[open] > summary { border-bottom: 1px solid rgba(40, 120, 190, 0.25); }
+:root[data-theme="aero"] .group-title { color: var(--ink); }
+:root[data-theme="aero"] .group-number,
+:root[data-theme="aero"] .number { color: var(--dim); }
+:root[data-theme="aero"] .workstream[data-complete="true"] .group-number { color: #3c9a1e; }
+:root[data-theme="aero"] .group-chevron { color: var(--muted); }
+:root[data-theme="aero"] .group-items { background: rgba(220, 240, 255, 0.35); }
+
+:root[data-theme="aero"] .item {
+  --heat: #9fb8cc;
+  border: 1px solid rgba(40, 120, 190, 0.25) !important;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff, #f2f9ff);
+  box-shadow: inset 0 1px 0 #fff, inset 4px 0 0 var(--heat), 0 1px 3px rgba(8, 60, 120, 0.08);
+}
+:root[data-theme="aero"] .item[data-status=in-progress] { --heat: #36b8ff; }
+:root[data-theme="aero"] .item[data-status=done] { --heat: #5fcf2e; background: linear-gradient(180deg, #ffffff, #effbe8); }
+:root[data-theme="aero"] .item[data-status=blocked] { --heat: #f0533d; background: linear-gradient(180deg, #ffffff, #fff0ed); }
+:root[data-theme="aero"] .item-title { color: var(--ink); }
+:root[data-theme="aero"] .item[data-status=done] .item-title,
+:root[data-theme="aero"] .item[data-status=done] .item-title:after { color: #2f8a12; }
+:root[data-theme="aero"] .note-preview,
+:root[data-theme="aero"] .detail-copy { color: var(--muted); }
+
+:root[data-theme="aero"] .status-button { color: var(--muted); }
+:root[data-theme="aero"] .status-button[data-state=in-progress] {
+  background: var(--gel-blue); border-color: #0f6fbf !important; color: #fff; text-shadow: 0 1px 1px rgba(0, 50, 110, 0.5);
+}
+:root[data-theme="aero"] .status-button[data-state=done] {
+  background: var(--gel-green); border-color: #3c9a1e !important; color: #fff; text-shadow: 0 1px 1px rgba(20, 80, 0, 0.55);
+}
+:root[data-theme="aero"] .status-button[data-state=blocked] {
+  background: var(--gel-red); border-color: #b5240f !important; color: #fff; text-shadow: 0 1px 1px rgba(100, 10, 0, 0.5);
+}
+:root[data-theme="aero"] .status-button[data-state] .status-icon { border-color: currentColor; }
+
+:root[data-theme="aero"] .attachment img { border: 1px solid rgba(40, 120, 190, 0.45); border-radius: 6px; background: #fff; }
+:root[data-theme="aero"] .attachment figcaption { color: var(--muted); }
+:root[data-theme="aero"] .drop-target { box-shadow: 0 0 0 2px #36b8ff, 0 0 16px rgba(54, 184, 255, 0.7) !important; }
+
+/* ── Menus and dialogs: frosted panes ───────────────────────────── */
+
+:root[data-theme="aero"] .file-menu-panel,
+:root[data-theme="aero"] .client-menu-panel {
+  border: 1px solid rgba(20, 90, 160, 0.5) !important;
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(228, 244, 255, 0.95)) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 30px rgba(8, 60, 120, 0.3) !important;
+}
+:root[data-theme="aero"] .file-menu-label { color: #2e9a1a; font-weight: 700; }
+:root[data-theme="aero"] .file-menu-label:not(:first-child) { border-top-color: rgba(40, 120, 190, 0.15); }
+:root[data-theme="aero"] .file-menu-item,
+:root[data-theme="aero"] .client-menu-item { color: var(--ink); }
+:root[data-theme="aero"] .file-menu-item:hover,
+:root[data-theme="aero"] .file-menu-item:focus-visible,
+:root[data-theme="aero"] .client-menu-item:hover,
+:root[data-theme="aero"] .client-menu-item:focus-visible {
+  color: var(--ink);
+  border-color: rgba(54, 160, 230, 0.6) !important;
+  background: linear-gradient(180deg, #f3fbff, #cdeaff);
+}
+:root[data-theme="aero"] .client-menu-item[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+:root[data-theme="aero"] .client-menu-item::before { border-color: rgba(40, 120, 190, 0.5); }
+:root[data-theme="aero"] .client-menu-item[aria-selected="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #e6ffd4, #5fcf2e 60%);
+  border-color: #3c9a1e;
+}
+
+:root[data-theme="aero"] .note-dialog,
+:root[data-theme="aero"] .detail-dialog {
+  border: 1px solid rgba(20, 90, 160, 0.55);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(228, 244, 255, 0.95));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 #fff, 0 24px 60px rgba(8, 60, 120, 0.45);
+}
+:root[data-theme="aero"] .note-dialog::backdrop,
+:root[data-theme="aero"] .detail-dialog::backdrop,
+:root[data-theme="aero"] .image-viewer::backdrop { background: rgba(10, 60, 120, 0.35); backdrop-filter: blur(4px); }
+:root[data-theme="aero"] .field-label { color: var(--muted); }
+:root[data-theme="aero"] .icon-button { color: var(--muted); }
+:root[data-theme="aero"] .image-viewer img {
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(20, 90, 160, 0.5), 0 24px 60px rgba(8, 60, 120, 0.5);
+}
+
+/* as a workspace pane the window comes from Mosaic: fill it in light glass */
+:root[data-theme="aero"].in-pane .shell {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: linear-gradient(180deg, #f4fbff, #e2f2ff);
+}
+:root[data-theme="aero"].in-pane .top-shell { border-radius: 0; }
+
+@media (max-width: 600px) {
+  :root[data-theme="aero"] .shell { border-radius: 0; border: none; }
+  :root[data-theme="aero"] .masthead h1 { font-size: 24px; }
+  :root[data-theme="aero"] .list-heading h2 { font-size: 18px; }
+}
