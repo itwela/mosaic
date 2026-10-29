@@ -20,7 +20,7 @@ export interface LaunchItem {
 
 export interface Panel {
   id: string;
-  type?: "terminal" | "launcher" | "usage" | "fieldnotes";
+  type?: "terminal" | "launcher" | "usage" | "fieldnotes" | "zen";
   // terminal
   tabs: Tab[];
   activeTabId: string;

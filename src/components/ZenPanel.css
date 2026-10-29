@@ -1,0 +1,32 @@
+.zen-panel-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--cream-dim);
+  font-size: 13px;
+}
+
+.zen-panel-empty button {
+  padding: 8px 16px;
+  font: 600 12px var(--font-body);
+  letter-spacing: 0.04em;
+  color: #0f0d0b;
+  border: 2px solid var(--lead, #0c0a08);
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f4f6f9, #c9d0da);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.zen-panel-empty button:hover { background: linear-gradient(180deg, #ffffff, #d8dee7); }
+
+.zen-panel-error {
+  max-width: 320px;
+  color: var(--red);
+  font-size: 12px;
+}

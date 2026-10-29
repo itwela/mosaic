@@ -35,6 +35,10 @@ export function makeFieldnotesPanel(): Panel {
   return { id: uuidv4(), type: "fieldnotes", tabs: [], activeTabId: "", viewId: uuidv4() };
 }
 
+export function makeZenPanel(): Panel {
+  return { id: uuidv4(), type: "zen", tabs: [], activeTabId: "" };
+}
+
 export function makeUsagePanel(): Panel {
   return { id: uuidv4(), type: "usage", tabs: [], activeTabId: "" };
 }
