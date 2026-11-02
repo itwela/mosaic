@@ -146,12 +146,13 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
   }
 
   return <div className="screenshot-bar" aria-label="Recent screenshots">
-    <button className="screenshot-folder" onClick={() => void chooseFolder()} title={`Screenshot folder: ${listing.folder || folder || "Desktop/Screenshots"}\nClick to change folder`}>▧</button>
+    <button className="screenshot-folder" onClick={() => void chooseFolder()} title={`Screenshot folder: ${listing.folder || folder || "(none — pick once)"}\nClick to choose folder`}>▧</button>
     <div className="screenshot-strip" ref={strip} onWheel={(e) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.currentTarget.scrollLeft += e.deltaY; }
     }}>
-      {error ? <button className="screenshot-empty" title={error} onClick={() => void chooseFolder()}>Folder unavailable · choose folder</button> : listing.files.length === 0 ?
-        <button className="screenshot-empty" onClick={() => void chooseFolder()}>Screenshots · choose folder</button> :
+      {error ? <button className="screenshot-empty" title={error} onClick={() => void chooseFolder()}>Folder unavailable · choose folder</button> : !folder ?
+        <button className="screenshot-empty" onClick={() => void chooseFolder()}>Pick a screenshot folder once</button> : listing.files.length === 0 ?
+        <button className="screenshot-empty" onClick={() => void chooseFolder()}>No screenshots yet · change folder</button> :
         listing.files.map((shot) => <button key={shot.path} className={`screenshot-thumb ${selected.has(shot.path) ? "screenshot-thumb-selected" : ""}`} aria-label={shot.name} onPointerEnter={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           setPreview({ shot, x: r.left + r.width / 2, y: r.bottom + 10 });

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Mosaic needs Desktop access when your agent workspaces or screenshot folder live there. You only need to Allow this once in System Settings.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Mosaic needs Documents access when an agent or launcher opens files there. You only need to Allow this once in System Settings.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Mosaic needs Downloads access when an agent or launcher opens files there. You only need to Allow this once in System Settings.</string>
+</dict>
+</plist>

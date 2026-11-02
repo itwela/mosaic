@@ -184,6 +184,32 @@ async fn open_path(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens macOS Privacy settings so the user can grant Desktop / Full Disk Access once.
+/// Agents often work under ~/Desktop (e.g. Desktop/Code); macOS gates that folder and
+/// re-prompts when Mosaic is ad-hoc signed or running from a renamed bundle like mosaic.app.old.
+#[tauri::command]
+fn open_privacy_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        // Prefer the Files and Folders pane; fall back to Full Disk Access, then Security.
+        let urls = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_FilesAndFolders",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
+            "x-apple.systempreferences:com.apple.preference.security",
+        ];
+        for url in urls {
+            if std::process::Command::new("open").arg(url).status().map(|s| s.success()).unwrap_or(false) {
+                return Ok(());
+            }
+        }
+        Err("Could not open System Settings".into())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("Privacy settings are only needed on macOS".into())
+    }
+}
+
 #[derive(serde::Serialize)]
 struct AppEntry {
     name: String,
@@ -240,7 +266,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
+        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, open_privacy_settings, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

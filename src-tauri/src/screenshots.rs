@@ -33,11 +33,13 @@ fn list(folder: PathBuf) -> Result<ScreenshotList, String> {
 
 #[tauri::command]
 pub async fn list_screenshots(folder: Option<String>) -> Result<ScreenshotList, String> {
-    let folder = folder.map(PathBuf::from).unwrap_or_else(|| {
-        let desktop = dirs::desktop_dir().unwrap_or_else(|| dirs::home_dir().unwrap_or_default());
-        let screenshots = desktop.join("Screenshots");
-        if screenshots.is_dir() { screenshots } else { desktop }
-    });
+    // Never touch Desktop/Documents/Downloads unless the user picked a folder.
+    // Silent defaults to Desktop trigger macOS "Files and Folders" prompts on a
+    // timer (and again after every ad-hoc rebuild), which is what made Allow feel
+    // like it never stuck while agents were running.
+    let Some(folder) = folder.filter(|f| !f.trim().is_empty()).map(PathBuf::from) else {
+        return Ok(ScreenshotList { folder: String::new(), files: Vec::new() });
+    };
     tokio::task::spawn_blocking(move || list(folder)).await.map_err(|e| e.to_string())?
 }
 
