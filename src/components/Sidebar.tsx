@@ -202,6 +202,7 @@ export default function Sidebar({
               key={ws.id}
               className={`workspace-item ${ws.id === activeId && view === "workspace" ? "workspace-active" : ""} ${drag?.index === index ? "workspace-dragging" : ""} ${showInsert && insertIndex === index ? "workspace-insert-before" : ""} ${showInsert && insertIndex === workspaces.length && index === workspaces.length - 1 ? "workspace-insert-after" : ""}`}
               data-workspace-index={index}
+              data-workspace-id={ws.id}
               onClick={() => {
                 if (didDragRef.current) { didDragRef.current = false; return; }
                 onSelect(ws.id);

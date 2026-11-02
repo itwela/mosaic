@@ -646,3 +646,10 @@
 .lbl-full { display: none; }
 .sidebar-collapsed .workspace-short-name { order: 1; color: #fff; }
 .sidebar-collapsed .workspace-active .workspace-short-name { color: #fff; }
+
+/* A panel is being dragged over this workspace: dropping moves it here. */
+.workspace-item.workspace-panel-drop {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}

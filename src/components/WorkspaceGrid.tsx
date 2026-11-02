@@ -10,7 +10,7 @@ import LauncherPanel from "./LauncherPanel";
 import ZenPanel from "./ZenPanel";
 import UsagePanel from "./UsagePanel";
 import FieldnotesPanel from "./FieldnotesPanel";
-import { makePanel, makeLauncherPanel, makeUsagePanel, makeFieldnotesPanel, makeZenPanel, restorePanel } from "../store/workspaces";
+import { makePanel, makeLauncherPanel, makeUsagePanel, makeFieldnotesPanel, makeZenPanel, restorePanel, movePanelToWorkspace } from "../store/workspaces";
 import { pushUndo } from "../store/undo";
 import "./WorkspaceGrid.css";
 
@@ -42,6 +42,9 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
   }
   const dragSourceRef = useRef<number | null>(null);
   const dragOverRef = useRef<number | null>(null);
+  // Sidebar workspace currently under the dragged panel (drop = move it there).
+  const dropWsRef = useRef<HTMLElement | null>(null);
+  const [dropWsName, setDropWsName] = useState<string | null>(null);
 
   function updatePanel(updated: PanelType) {
     onUpdate({
@@ -126,6 +129,14 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
     function onMove(e: PointerEvent) {
       setDragPos({ x: e.clientX, y: e.clientY });
       const el = document.elementFromPoint(e.clientX, e.clientY);
+      const wsEl = el?.closest("[data-workspace-id]") as HTMLElement | null;
+      const wsTarget = wsEl && wsEl.dataset.workspaceId !== workspace.id ? wsEl : null;
+      if (wsTarget !== dropWsRef.current) {
+        dropWsRef.current?.classList.remove("workspace-panel-drop");
+        wsTarget?.classList.add("workspace-panel-drop");
+        dropWsRef.current = wsTarget;
+        setDropWsName(wsTarget ? wsTarget.querySelector(".workspace-name")?.textContent ?? "workspace" : null);
+      }
       const container = el?.closest("[data-panel-index]") as HTMLElement | null;
       const idx = container ? Number(container.dataset.panelIndex) : null;
       if (idx !== dragOverRef.current) {
@@ -137,9 +148,15 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
     function onUp() {
       const src = dragSourceRef.current;
       const dst = dragOverRef.current;
-      if (src !== null && dst !== null && dst !== src) {
+      const wsTarget = dropWsRef.current;
+      if (src !== null && wsTarget?.dataset.workspaceId) {
+        movePanelToWorkspace(panels[src].id, wsTarget.dataset.workspaceId);
+      } else if (src !== null && dst !== null && dst !== src) {
         swapPanels(src, dst);
       }
+      wsTarget?.classList.remove("workspace-panel-drop");
+      dropWsRef.current = null;
+      setDropWsName(null);
       dragSourceRef.current = null;
       dragOverRef.current = null;
       setDragSource(null);
@@ -258,7 +275,7 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
       {dragSource !== null && dragPos && createPortal(
         <div className="panel-drag-ghost" style={{ left: dragPos.x, top: dragPos.y }}>
           <span className="grip-dots">⠿</span>
-          <span className="panel-drag-ghost-label">{panelLabel(panels[dragSource])}</span>
+          <span className="panel-drag-ghost-label">{panelLabel(panels[dragSource])}{dropWsName ? ` → ${dropWsName}` : ""}</span>
         </div>,
         document.body,
       )}

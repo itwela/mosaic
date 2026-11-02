@@ -239,7 +239,7 @@ function TabItem({
   const badge = meta ? agentBadge(meta.agent) : null;
 
   return (
-    <div className={`tab-item tab-status-${status} ${active ? "tab-active" : ""}`} style={{ "--tab-status": STATUS_COLORS[status] } as CSSProperties} title={STATUS_LABELS[status]} onClick={onSelect}>
+    <div className={`tab-item tab-status-${status} ${active ? "tab-active" : ""}`} style={{ "--tab-status": STATUS_COLORS[status] } as CSSProperties} title={`${STATUS_LABELS[status]} · double-click to rename`} onClick={onSelect} onDoubleClick={(e) => { e.stopPropagation(); setDraft(tab.title); setEditing(true); }}>
       {badge && (badge.logo ?
         <img className="tab-agent-logo" src={badge.logo} alt={badge.name} title={badge.name} /> :
         <span className="tab-agent-name" title={badge.name}>{badge.name}</span>
@@ -261,7 +261,7 @@ function TabItem({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className="tab-title" onDoubleClick={() => setEditing(true)}>
+        <span className="tab-title">
           {tab.title}
         </span>
       )}

@@ -139,3 +139,21 @@ export function restoreTab(panelId: string, index: number, tab: Tab) {
 export function restoreLaunchItem(panelId: string, index: number, item: LaunchItem) {
   mapPanel(panelId, (p) => ({ ...p, launchItems: insertAt(p.launchItems ?? [], index, item) }));
 }
+
+// Move a panel (and its live shells) into another workspace. The source keeps
+// at least one panel so its grid never ends up empty.
+export function movePanelToWorkspace(panelId: string, targetWorkspaceId: string) {
+  mutator?.((wss) => {
+    const source = wss.find((w) => w.panels.some((p) => p.id === panelId));
+    if (!source || source.id === targetWorkspaceId) return wss;
+    const panel = source.panels.find((p) => p.id === panelId)!;
+    return wss.map((w) => {
+      if (w.id === source.id) {
+        const rest = w.panels.filter((p) => p.id !== panelId);
+        return { ...w, panels: rest.length ? rest : [makePanel()] };
+      }
+      if (w.id === targetWorkspaceId) return { ...w, panels: [...w.panels, panel] };
+      return w;
+    });
+  });
+}
