@@ -110,9 +110,14 @@
 .usage-reset { font-size: 10.5px; color: var(--muted); }
 
 .usage-note, .usage-error {
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.35;
   color: var(--muted);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .usage-error { color: #e8796a; }
 

@@ -1,7 +1,7 @@
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, Workspace } from "../types";
 import { agentBadge, STATUS_COLORS, STATUS_LABELS, TabMeta } from "../lib/agents";
-import { countAll, statusTone, TONE, workspaceTone, countWorkspace } from "../lib/approvals";
+import { countAll, statusTone, TONE, workspaceTone, countWorkspace, terminalPanes } from "../lib/approvals";
 import { adoptTerminal, releaseTerminal } from "./Terminal";
 import StatusRing from "./StatusRing";
 import "./AllRunningView.css";
@@ -55,14 +55,14 @@ export default function AllRunningView({ workspaces, tabMeta, onOpenWorkspace }:
   const arcs = entries.map(({ tab }) => TONE[statusTone(tabMeta[tab.id]?.status)]);
   const inner = workspaces.map((ws) => TONE[workspaceTone(countWorkspace(ws, tabMeta))]);
   const idle = counts.terminals + counts.ready;
-  const live = counts.working + counts.attention + idle;
+  const live = workspaces.reduce((count, ws) => count + terminalPanes(ws), 0);
 
   return (
     <div className="all-running">
       <section className="all-core">
         <i className="brk tl" /><i className="brk tr" /><i className="brk bl" /><i className="brk br" />
         <div className="lbl">Fig.01 — agent core · all workspaces</div>
-        <StatusRing arcs={arcs} inner={inner} center={live} label="LIVE" size={280} />
+        <StatusRing arcs={arcs} inner={inner} center={live} label="PANES" size={280} />
         <div className="all-core-stats">
           <div><div className="num ca" style={{ color: "var(--amb)" }}>{counts.working.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--amb)" }}>Working</div></div>
           <div><div className="num ca" style={{ color: "var(--ruby)" }}>{counts.attention.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--ruby)" }}>Need you</div></div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Workspace } from "../types";
 import { agentBadge, TabMeta } from "../lib/agents";
-import { ago, answerAgent, AttentionTarget, countWorkspace, incomingApprovals, statusTone, TONE, workspaceTone } from "../lib/approvals";
+import { ago, answerAgent, AttentionTarget, countWorkspace, incomingApprovals, statusTone, terminalPanes, TONE, workspaceTone } from "../lib/approvals";
 import { FieldnotesProgress } from "../lib/fieldnotesProgress";
 import StatusRing from "./StatusRing";
 
@@ -48,9 +48,9 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
     }
   }
   const inner = workspaces.map((ws) => TONE[workspaceTone(countWorkspace(ws, tabMeta))]);
-  // The center figure is the three numbers beside it. Shell sessions are a
-  // sidebar chip, not one of these categories, so they do not inflate the ring.
-  const live = counts.working + counts.attention + counts.ready;
+  // The mockup's 04 sits beside 02/01/00, so the centre is not that sum. It is
+  // every terminal pane on this workspace, idle shells included.
+  const live = terminalPanes(workspace);
 
   async function answer(kind: "approve" | "deny") {
     if (!item || busy) return;
@@ -70,7 +70,7 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
   return (
     <div className="dash">
       <section className="dash-core">
-        <StatusRing arcs={arcs} inner={inner} center={live} label="THIS WORKSPACE" />
+        <StatusRing arcs={arcs} inner={inner} center={live} label="PANES" />
         <div className="dash-stats">
           <div><span className="num ca" style={{ color: "var(--amb)" }}>{pad(counts.working)}</span> <span className="lbl" style={{ color: "var(--amb)" }}>Working</span></div>
           <div><span className="num ca" style={{ color: "var(--ruby)" }}>{pad(counts.attention)}</span> <span className="lbl" style={{ color: "var(--ruby)" }}>Need you</span></div>

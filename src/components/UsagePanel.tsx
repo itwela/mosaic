@@ -136,8 +136,7 @@ function deepseekProvider(r?: Result): Provider {
 }
 
 function ago(ms: number): string {
-  const mins = Math.round((Date.now() - ms) / 60000);
-  if (mins < 1) return "just now";
+  const mins = Math.max(0, Math.floor((Date.now() - ms) / 60000));
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.round(mins / 60);
   return hours < 48 ? `${hours}h ago` : `${Math.round(hours / 24)}d ago`;
@@ -304,7 +303,7 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
                 </div>
               </div>
             ) : p.error ? (
-              <p className="usage-error">{p.error}</p>
+              <p className="usage-error" title={p.error}>{p.error}</p>
             ) : p.balances ? (
               p.balances.length ? p.balances.map((b) => <span key={b} className="usage-balance">{b}</span>) : <p className="usage-note">No balance reported.</p>
             ) : p.meters.length === 0 ? (
@@ -323,7 +322,7 @@ export default function UsagePanel({ panelIndex, onReorderStart, onClosePanel }:
                 </div>
               ))
             )}
-            {p.note && !p.error && <p className="usage-note">{p.note}</p>}
+            {p.note && !p.error && <p className="usage-note" title={p.note}>{p.note}</p>}
           </section>
         ))}
       </div>

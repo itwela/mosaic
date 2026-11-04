@@ -363,9 +363,8 @@
   margin-top: 4px;
   font-size: 13px;
   color: #FFE3DE;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .incoming-note { margin-top: auto; font-size: 11px; color: var(--mut, var(--muted)); }
 .incoming-empty .incoming-title { margin-top: 14px; }

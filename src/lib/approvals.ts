@@ -48,6 +48,16 @@ export function countWorkspace(ws: Workspace, tabMeta: Record<string, TabMeta>):
   return countPanels(ws.panels, tabMeta);
 }
 
+// Every terminal session in the workspace, including idle shells. Launcher and
+// usage panes are not sessions. This is the ring's centre, not the sum of the
+// Working / Need you / Ready figures.
+export function terminalPanes(ws: Workspace): number {
+  return ws.panels.reduce((count, panel) => {
+    if (panel.type && panel.type !== "terminal") return count;
+    return count + panel.tabs.length;
+  }, 0);
+}
+
 export function countAll(workspaces: Workspace[], tabMeta: Record<string, TabMeta>): WorkspaceCounts {
   const counts = { ...EMPTY };
   for (const ws of workspaces) {
