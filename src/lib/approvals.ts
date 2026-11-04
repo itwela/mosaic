@@ -101,8 +101,8 @@ export interface AttentionTarget {
   tabTitle: string;
   agent: string | null;
   prompt: string;
-  approve: string;
-  deny: string;
+  approve: string | null;
+  deny: string | null;
   at: number;
 }
 

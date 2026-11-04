@@ -200,8 +200,8 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
       </div>
       {waiting && (
         <div className="approval-bar">
-          <button className="btn pri" onClick={() => void answer(offer?.approve ?? "y\r")}>Approve ⏎</button>
-          <button className="btn danger" onClick={() => void answer(offer?.deny ?? "n\r")}>Deny</button>
+          <button className="btn pri" disabled={!offer?.approve} title={offer?.approve ? "Approve" : "Waiting until the Yes row is visible"} onClick={() => offer?.approve && void answer(offer.approve)}>Approve ⏎</button>
+          <button className="btn danger" disabled={!offer?.deny} title={offer?.deny ? "Deny" : "Waiting until the No row is visible"} onClick={() => offer?.deny && void answer(offer.deny)}>Deny</button>
           <button className="btn" onClick={() => { setReplyOpen((open) => !open); setAnswerError(""); }}>Reply</button>
           {answerError && <span className="approval-error">{answerError}</span>}
         </div>

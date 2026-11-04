@@ -57,7 +57,9 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
     setBusy(kind);
     setError("");
     try {
-      await answerAgent(item.tabId, kind === "approve" ? item.approve : item.deny);
+      const data = kind === "approve" ? item.approve : item.deny;
+      if (!data) return;
+      await answerAgent(item.tabId, data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -70,7 +72,7 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
   return (
     <div className="dash">
       <section className="dash-core">
-        <StatusRing arcs={arcs} inner={inner} center={live} label="PANES" />
+        <StatusRing arcs={arcs} inner={inner} center={live} label="THIS WORKSPACE" />
         <div className="dash-stats">
           <div><span className="num ca" style={{ color: "var(--amb)" }}>{pad(counts.working)}</span> <span className="lbl" style={{ color: "var(--amb)" }}>Working</span></div>
           <div><span className="num ca" style={{ color: "var(--ruby)" }}>{pad(counts.attention)}</span> <span className="lbl" style={{ color: "var(--ruby)" }}>Need you</span></div>
@@ -94,8 +96,8 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
                 </div>
                 <div className="incoming-prompt">{item.prompt}</div>
               </div>
-              <button className="btn pri" disabled={busy !== null} onClick={() => void answer("approve")}>{busy === "approve" ? "Sending" : "Approve ⏎"}</button>
-              <button className="btn danger" disabled={busy !== null} onClick={() => void answer("deny")}>{busy === "deny" ? "Sending" : "Deny"}</button>
+              <button className="btn pri" disabled={busy !== null || !item.approve} title={item.approve ? "Approve" : "Waiting until the Yes row is visible"} onClick={() => void answer("approve")}>{busy === "approve" ? "Sending" : "Approve ⏎"}</button>
+              <button className="btn danger" disabled={busy !== null || !item.deny} title={item.deny ? "Deny" : "Waiting until the No row is visible"} onClick={() => void answer("deny")}>{busy === "deny" ? "Sending" : "Deny"}</button>
               <button className="btn" onClick={() => onOpen(item)}>Open ↗</button>
               {incoming.length > 1 && (
                 <button className="btn" onClick={() => setCursor((n) => n + 1)} title="Next approval">Next</button>

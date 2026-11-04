@@ -129,6 +129,7 @@ const PERMISSION_HEAD = [
   /allow execution of\b[^?]*\?/gi,
   /upload to vercel blob and replace\b[^?]*\?/gi,
   /would you like to (?:run the following command|make the following edits|grant these permissions|send input to|proceed)\b[^?]*\?/gi,
+  /do you want to\b[^?]*\?/gi,
   /review the plan and approve\b[^?]*\?/gi,
 ];
 
@@ -161,12 +162,12 @@ function isNo(label: string): boolean {
   return label.toLowerCase().startsWith("no");
 }
 
-function choicesAtEnd(flat: string): boolean {
-  const choices = parseChoices(flat);
+// The text after a permission header is its option rows, and nothing else.
+function optionsOnly(after: string): boolean {
+  const choices = parseChoices(after);
   if (!choices.some((choice) => isPlainYes(choice.label) || choice.label.startsWith("allow"))) return false;
   if (!choices.some((choice) => isNo(choice.label))) return false;
-  const last = choices[choices.length - 1];
-  return flat.trimEnd().endsWith(last.label);
+  return after.trimEnd().endsWith(choices[choices.length - 1].label);
 }
 
 function permissionAtEnd(flat: string): boolean {
@@ -182,7 +183,7 @@ function permissionAtEnd(flat: string): boolean {
   if (end < 0) return false;
   const after = flat.slice(end).trim();
   if (!after) return true;
-  return /^(?:\d+\s*[.)]\s+\S.+)$/.test(after) || choicesAtEnd(flat);
+  return optionsOnly(after);
 }
 
 function fullQuestion(flat: string): string | null {
@@ -220,9 +221,9 @@ const READY_RULES: RegExp[] = [
 export function detectScreenState(screen: string): AgentScreenState {
   const lines = screenLines(screen);
   const flat = flatScreen(lines).toLowerCase();
-  // Options or a permission header, and nothing after them. A sentence that
-  // merely contains "do you want to …?" is prose.
-  if (choicesAtEnd(flat) || permissionAtEnd(flat)) return "attention";
+  // A permission header at the bottom, alone or with its own option rows.
+  // Numbered Yes/No lines by themselves are a list, not a dialog.
+  if (permissionAtEnd(flat)) return "attention";
   if (/(?:waiting for (?:your|user) (?:input|approval)|permission required)\s*$/.test(flat)) return "attention";
   if (RUNNING_RULES.some((rule) => rule.test(flat))) return "running";
   if (READY_RULES.some((rule) => rule.test(flat))) return "ready";
@@ -262,8 +263,10 @@ export function classifyStatus(s: SessionStatus, screen: AgentScreenState = "unk
 // y/n when the prompt has no numbers). They are written to that tab's PTY.
 export interface ApprovalOffer {
   prompt: string;
-  approve: string;
-  deny: string;
+  // Null until that row is actually on screen. A header-only Allow prompt
+  // must not guess 1 or 2 — option 2 on Claude's menu is "don't ask again".
+  approve: string | null;
+  deny: string | null;
   // Stable identity of this dialog. Wrapping the question onto fewer rows does
   // not change it; a different yes/no pair, or a different question, does.
   key: string;
@@ -277,8 +280,8 @@ export interface TabMeta {
 
 const DEFAULT_APPROVAL: ApprovalOffer = {
   prompt: "Waiting for approval",
-  approve: "y\r",
-  deny: "n\r",
+  approve: null,
+  deny: null,
   key: "waiting",
 };
 
@@ -305,11 +308,13 @@ export function extractApproval(screen: string): ApprovalOffer {
   const choices = parseChoices(lower);
   const yes = choices.find((choice) => isPlainYes(choice.label));
   const no = choices.find((choice) => isNo(choice.label));
-  const claudeHeader = /allow\s+[a-z0-9][\w.-]*/.test(lower) || /do you want to\b/.test(lower);
+  // Codex sentences with no numbered rows (the upload line) are y / n.
+  // An Allow / "do you want" header waits until its Yes and No rows are visible.
+  const codexYn = !yes && !no && /upload to vercel blob and replace\b|would you like to\b/.test(lower);
   const prompt = (fullQuestion(flat) || DEFAULT_APPROVAL.prompt).slice(0, 220);
-  const approve = yes ? `${yes.n}\r` : claudeHeader && choices.length === 0 ? "1\r" : "y\r";
-  const deny = no ? `${no.n}\r` : claudeHeader && choices.length === 0 ? "2\r" : "n\r";
-  return { prompt, approve, deny, key: `${prompt}|${approve}|${deny}` };
+  const approve = yes ? `${yes.n}\r` : codexYn ? "y\r" : null;
+  const deny = no ? `${no.n}\r` : codexYn ? "n\r" : null;
+  return { prompt, approve, deny, key: `${prompt}|${approve ?? ""}|${deny ?? ""}` };
 }
 
 // Classify the text of a desktop notification an agent sent via OSC 9/777.

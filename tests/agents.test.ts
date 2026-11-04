@@ -48,18 +48,22 @@ test("Codex numbered menu uses the option numbers; the upload sentence is y/n", 
   assert.equal(upload.prompt, "Upload to Vercel blob and replace the links in /resources?");
 });
 
-test("a wrapped Allow line is the whole question, not its last line", () => {
+test("a wrapped Allow line is the whole question, and does not guess a number", () => {
   const wrapped = "Allow Bash(\nrm -rf public/old-icons\n)?";
   assert.equal(detectScreenState(wrapped), "attention");
-  assert.equal(extractApproval(wrapped).prompt, "Allow Bash(rm -rf public/old-icons)?");
-  assert.equal(extractApproval(wrapped).approve, "1\r");
-  assert.equal(extractApproval(wrapped).deny, "2\r");
+  const offer = extractApproval(wrapped);
+  assert.equal(offer.prompt, "Allow Bash(rm -rf public/old-icons)?");
+  assert.equal(offer.approve, null);
+  assert.equal(offer.deny, null);
 });
 
-test("Allow WebFetch? with no parentheses is a permission dialog", () => {
+test("Allow WebFetch? with no parentheses is a permission dialog and waits for rows", () => {
   const screen = "Allow WebFetch?";
   assert.equal(detectScreenState(screen), "attention");
-  assert.equal(extractApproval(screen).prompt, "Allow WebFetch?");
+  const offer = extractApproval(screen);
+  assert.equal(offer.prompt, "Allow WebFetch?");
+  assert.equal(offer.approve, null);
+  assert.equal(offer.deny, null);
 });
 
 test("prose that mentions do you want to is not a live dialog", () => {
@@ -69,9 +73,11 @@ test("prose that mentions do you want to is not a live dialog", () => {
   assert.equal(detectScreenState(buried), "running");
 });
 
-test("option rows still count when the question has scrolled off", () => {
-  const rows = "1. Yes, proceed\n2. No, and tell Codex what to do";
-  assert.equal(detectScreenState(rows), "attention");
-  assert.equal(extractApproval(rows).approve, "1\r");
-  assert.equal(extractApproval(rows).deny, "2\r");
+test("numbered Yes/No lines alone are not a permission dialog", () => {
+  const shipped = "1. Yes we shipped the patch\n2. No issues found in CI";
+  assert.notEqual(detectScreenState(shipped), "attention");
+  const handbook = "From the handbook:\n1. Yes we shipped the patch\n2. No issues found in CI";
+  assert.notEqual(detectScreenState(handbook), "attention");
+  const scrolled = "1. Yes, proceed\n2. No, and tell Codex what to do";
+  assert.notEqual(detectScreenState(scrolled), "attention");
 });
