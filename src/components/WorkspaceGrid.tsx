@@ -156,7 +156,11 @@ export default function WorkspaceGrid({ active, workspace, workspaces, tabMeta, 
     return active?.title || "Terminal";
   }
 
-  const COLS = Math.ceil(Math.sqrt(panels.length));
+  // With a usage panel, keep a 3-column board so that panel can take the two
+  // columns the guide gives AI usage. Other counts stay on the square grid.
+  const COLS = panels.some((panel) => panel.type === "usage") && panels.length >= 4
+    ? 3
+    : Math.ceil(Math.sqrt(Math.max(panels.length, 1)));
   const rows: PanelType[][] = [];
   for (let i = 0; i < panels.length; i += COLS) {
     rows.push(panels.slice(i, i + COLS));
@@ -186,10 +190,13 @@ export default function WorkspaceGrid({ active, workspace, workspaces, tabMeta, 
                     const isTarget = dragSource !== null && dragSource !== flatIndex && dragOver === flatIndex;
                     const attention = (!panel.type || panel.type === "terminal") && panel.tabs.some((tab) => tabMeta[tab.id]?.status === "attention");
                     const working = (!panel.type || panel.type === "terminal") && panel.tabs.some((tab) => tabMeta[tab.id]?.status === "running");
+                    const spanRow = row.some((item) => item.type === "usage") && row.length > 1 && row.length < COLS;
+                    const usageShare = spanRow ? Math.round((100 * (COLS - row.length + 1)) / COLS) : 0;
+                    const otherShare = spanRow ? Math.round((100 - usageShare) / (row.length - 1)) : 0;
                     return (
                       <Fragment key={panel.id}>
                         {ci > 0 && <Separator className="resize-handle-v" />}
-                        <Panel minSize={10}>
+                        <Panel minSize={panel.type === "usage" && spanRow ? 40 : 10} defaultSize={spanRow ? `${panel.type === "usage" ? usageShare : otherShare}%` : undefined}>
                           <div
                             className={`panel-container ${isDragging ? "panel-dragging" : ""} ${isTarget ? "panel-drop-target" : ""} ${faded.has(panel.id) ? "panel-faded" : ""} ${attention ? "panel-wait" : working ? "panel-working" : ""}`}
                             onDoubleClick={(e) => toggleFaded(e, panel.id)}

@@ -207,10 +207,10 @@ export default function App() {
     };
     const onInput = (event: Event) => {
       const { id, at } = (event as CustomEvent<{ id: string; at: number }>).detail;
-      const prev = signals[id]?.inputAt ?? 0;
-      signals[id] = { ...signals[id], inputAt: at };
-      // Answering a prompt should clear the red right away, not on the next poll.
-      if (at - prev > 500) update();
+      const cur = signals[id] ?? {};
+      // The question still on screen is the one this keystroke answered.
+      signals[id] = { ...cur, inputAt: at, dismissedPrompt: cur.screenPrompt ?? cur.dismissedPrompt };
+      update();
     };
     window.addEventListener("mosaic-agent-notify", onNotify);
     window.addEventListener("mosaic-agent-input", onInput);
@@ -218,6 +218,22 @@ export default function App() {
       const { id, state, approval } = (event as CustomEvent<{ id: string; state: AgentScreenState; approval: ApprovalOffer | null }>).detail;
       screens[id] = state;
       approvals[id] = approval;
+      const cur = signals[id] ?? {};
+      if (state === "attention") {
+        const key = approval?.key || approval?.prompt || "attention";
+        // Same dialog (including a re-wrap) keeps its dismissal. A different key
+        // is a new question and can light the alarm again.
+        if (cur.screenPrompt !== key) {
+          signals[id] = {
+            ...cur,
+            screenPrompt: key,
+            dismissedPrompt: cur.dismissedPrompt === key ? cur.dismissedPrompt : undefined,
+          };
+        }
+      } else if (cur.screenPrompt || cur.dismissedPrompt) {
+        // The prompt left the live window, including when it scrolled into history.
+        signals[id] = { ...cur, screenPrompt: undefined, dismissedPrompt: undefined };
+      }
       update();
     };
     window.addEventListener("mosaic-agent-screen", onScreen);
@@ -419,6 +435,8 @@ export default function App() {
     <div className="app">
       <div className="workshop-grade" aria-hidden="true">
         <div className="g-warm" />
+        <div className="g-grain" />
+        <div className="g-rgb" />
         <div className="g-vig" />
         <div className="g-scan" />
       </div>
@@ -440,7 +458,7 @@ export default function App() {
         onSettings={() => toggleView("settings")}
         onCommands={() => toggleView("commands")}
         onFieldnotes={() => toggleView("fieldnotes")}
-        onAllRunning={() => setView("all")}
+        onAllRunning={() => toggleView("all")}
       />
       <div className="stage">
       <TopBar

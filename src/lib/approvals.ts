@@ -13,8 +13,7 @@ export async function answerAgent(id: string, data: string): Promise<void> {
 
 export function ago(at: number): string {
   const minutes = Math.max(0, Date.now() - at) / 60000;
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${Math.round(minutes)}m ago`;
+  if (minutes < 60) return `${Math.floor(minutes)}m ago`;
   const hours = minutes / 60;
   if (hours < 24) return `${Math.round(hours)}h ago`;
   return `${Math.round(hours / 24)}d ago`;

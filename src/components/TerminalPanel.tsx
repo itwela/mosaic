@@ -161,23 +161,14 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           onClick={() => setToolboxOpen(true)}
           title="Command toolbox"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="7" width="20" height="14" rx="2" />
-            <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
-            <path d="M2 13h20" />
-            <path d="M10 13v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2" />
-          </svg>
+          ⌸
         </button>
         <button
           className="clear-btn"
           onClick={clearActiveTerminal}
           title="Clear terminal"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
-            <path d="M22 21H7"/>
-            <path d="m5 11 9 9"/>
-          </svg>
+          ⌫
         </button>
         <button
           className={`folder-pin-btn ${savedPath ? "folder-pin-active" : ""}`}

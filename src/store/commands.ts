@@ -165,11 +165,11 @@ export function heatLevel(count: number): HeatLevel {
 }
 
 export const HEAT_COLORS: Record<HeatLevel, string> = {
-  cold: "#4a5568",
-  cool: "#5b7bb4",
-  warm: "#c99a4a",
-  hot: "#e07a3a",
-  hotter: "#e0453a",
+  cold: "#6B635A",
+  cool: "#7C9BFF",
+  warm: "#C99A4A",
+  hot: "#E07A3A",
+  hotter: "#E0453A",
 };
 
 export const HEAT_LABELS: Record<HeatLevel, string> = {

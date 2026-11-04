@@ -163,7 +163,6 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
   const cleared = clearedAt > 0 && listing.files.length > 0 && shots.length === 0;
 
   return <div className="screenshot-bar shots" aria-label="Recent screenshots">
-    <button className="screenshot-folder" onClick={() => void chooseFolder()} title={`Screenshot folder: ${listing.folder || folder || "(none — pick once)"}\nClick to choose folder`}>▧</button>
     <div className="screenshot-strip" ref={strip} onWheel={(e) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.currentTarget.scrollLeft += e.deltaY; }
     }}>

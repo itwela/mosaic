@@ -48,7 +48,9 @@ export default function WorkspaceDashboard({ workspace, workspaces, tabMeta, not
     }
   }
   const inner = workspaces.map((ws) => TONE[workspaceTone(countWorkspace(ws, tabMeta))]);
-  const live = counts.terminals + counts.working + counts.ready + counts.attention;
+  // The center figure is the three numbers beside it. Shell sessions are a
+  // sidebar chip, not one of these categories, so they do not inflate the ring.
+  const live = counts.working + counts.attention + counts.ready;
 
   async function answer(kind: "approve" | "deny") {
     if (!item || busy) return;

@@ -20,6 +20,11 @@ export interface SessionStatus {
 export interface TabSignals {
   notify?: { state: "attention" | "ready"; at: number };
   inputAt?: number;
+  // The question currently in the live viewport, and the same question after
+  // the user has already answered it. A matching dismissal keeps a prompt that
+  // is still sitting in the last screenful from painting the tab red again.
+  screenPrompt?: string;
+  dismissedPrompt?: string;
 }
 
 // A TUI that is working redraws its spinner every frame. Several seconds of
@@ -125,14 +130,16 @@ const ATTENTION_RULES: AttentionRule[] = [
     anchor: /allow execution of/,
     choice: /(?:^|\s)\d\.\s*(?:allow (?:once|for this session|tool for this session|all server tools)|no, (?:suggest changes|deny))/,
   },
-  // Claude Code permission prompt.
+  // Claude Code permission prompt. Numbered rows are the strict form; the
+  // question alone is also matched below, because the options wrap off the
+  // collapsed line or are not drawn yet.
   {
-    anchor: /do you want to (?:proceed|make this edit|run this|create)/,
-    choice: /(?:^|\s)\d\.\s*yes|yes, and don'?t ask again|no, and tell claude/,
+    anchor: /do you want to\b/,
+    choice: /(?:^|\s)\d\s*[.)]\s*yes|yes, and don'?t ask again|no, and tell claude|\?/,
   },
   {
     anchor: /would you like to proceed|review the plan and approve/,
-    choice: /(?:^|\s)\d\.\s*(?:yes|no)/,
+    choice: /(?:^|\s)\d\s*[.)]\s*(?:yes|no)/,
   },
 ];
 
@@ -156,6 +163,21 @@ export function detectScreenState(screen: string): AgentScreenState {
   for (const rule of ATTENTION_RULES) {
     if (rule.anchor.test(text) && rule.choice.test(text)) return "attention";
   }
+  // Claude's permission dialog. "Allow Bash(rm -rf public/old-icons)?" is the
+  // whole prompt; the 1. Yes / 2. No rows are sometimes on the next paint.
+  // Only the live window is searched, so a mention higher in scrollback does
+  // not count.
+  if (/allow\s+[a-z0-9][\w.-]*\s*\([^)]*\)\s*\?/.test(text)) return "attention";
+  if (/do you want to\b[^?]{0,160}\?/.test(text)) return "attention";
+  // The sentence the workshop guide prints in the Codex pane. The real Codex
+  // TUI line ("would you like to run the following command?" plus its numbered
+  // rows) is the rule above; this does not replace it.
+  if (/upload to vercel blob and replace[^?]{0,160}\?/.test(text)) return "attention";
+  // A short pane scrolls the question off and leaves the live option rows.
+  // Those rows are the dialog, not a transcript line: both the yes and the no
+  // are on screen together.
+  if (/(?:^|\s)\d\s*[.)]\s*yes, (?:proceed|just this once)/.test(text) && /no, and tell codex/.test(text)) return "attention";
+  if (/(?:^|\s)\d\s*[.)]\s*yes\b/.test(text) && /no, and tell claude/.test(text)) return "attention";
   // Direct question that names the requirement, with no option list to anchor on.
   if (/(?:waiting for (?:your|user) (?:input|approval)|permission required)/.test(text)) return "attention";
   // Work indicators before the input footer: TUIs keep their composer visible
@@ -176,9 +198,14 @@ export function classifyStatus(s: SessionStatus, screen: AgentScreenState = "unk
   const notify = signals.notify ?? null;
   const reported = hook && notify ? (hook.at >= notify.at ? hook : notify) : hook ?? notify;
   const answered = reported && (signals.inputAt ?? 0) > reported.at;
+  // The viewport can keep showing the question after the keystroke. That copy
+  // is the one the user just answered, not a new ask, so it must not hold the
+  // alarm. A different question is a new prompt and is not dismissed.
+  const dismissed = !!signals.screenPrompt
+    && signals.dismissedPrompt === signals.screenPrompt;
 
-  if (screen === "attention") return "attention";
-  if (reported?.state === "attention" && !answered) return "attention";
+  if (screen === "attention" && !dismissed) return "attention";
+  if (reported?.state === "attention" && !answered && !dismissed) return "attention";
   if (screen === "running") return "running";
   if (reported?.state === "running") return s.silent_ms > QUIET_MS * 15 ? "ready" : "running";
   if (reported?.state === "ready" && !answered) return "ready";
@@ -195,6 +222,9 @@ export interface ApprovalOffer {
   prompt: string;
   approve: string;
   deny: string;
+  // Stable identity of this dialog. Wrapping the question onto fewer rows does
+  // not change it; a different yes/no pair, or a different question, does.
+  key: string;
 }
 
 export interface TabMeta {
@@ -207,7 +237,22 @@ const DEFAULT_APPROVAL: ApprovalOffer = {
   prompt: "Waiting for approval",
   approve: "y\r",
   deny: "n\r",
+  key: "waiting",
 };
+
+// What makes this dialog the same dialog after a repaint. Prefer the option
+// rows, which stay put when the question wraps off a short pane.
+export function attentionKey(screen: string): string {
+  const text = screenWindow(screen);
+  const yes = text.match(/(?:^|\s)(\d\s*[.)]\s*yes\b[^|]{0,48})/);
+  const no = text.match(/(?:^|\s)(\d\s*[.)]\s*no\b[^|]{0,48})/);
+  if (yes && no) return `${yes[1].trim()}|${no[1].trim()}`;
+  const allow = text.match(/allow\s+[a-z0-9][\w.-]*\s*\([^)]*\)\s*\?/);
+  if (allow) return allow[0];
+  const ask = text.match(/(?:do you want to|would you like to|upload to vercel blob and replace)[^?]{0,120}\?/);
+  if (ask) return ask[0].replace(/\s+/g, " ").trim();
+  return text.slice(-60);
+}
 
 export function sessionToMeta(
   s: SessionStatus,
@@ -238,10 +283,14 @@ export function extractApproval(screen: string): ApprovalOffer {
   const yes = numbered.find((match) => /\byes\b|\ballow\b|\bproceed\b|\bapprove\b/.test(match[2]));
   const no = numbered.find((match) => /\bno\b|\bdeny\b|\bdon'?t\b|\bblock\b/.test(match[2]));
   const prompt = (question || DEFAULT_APPROVAL.prompt).slice(0, 220);
+  // Claude's selector takes 1 and 2 even when the option rows have not been
+  // captured. Codex's numbered rows still win when they are on screen.
+  const claudeMenu = /allow\s+[a-z0-9][\w.-]*\s*\(/.test(text) || /do you want to\b/.test(text);
   return {
     prompt,
-    approve: yes ? `${yes[1]}\r` : DEFAULT_APPROVAL.approve,
-    deny: no ? `${no[1]}\r` : DEFAULT_APPROVAL.deny,
+    approve: yes ? `${yes[1]}\r` : claudeMenu ? "1\r" : DEFAULT_APPROVAL.approve,
+    deny: no ? `${no[1]}\r` : claudeMenu ? "2\r" : DEFAULT_APPROVAL.deny,
+    key: attentionKey(screen),
   };
 }
 
@@ -253,12 +302,13 @@ export function notificationState(text: string): "attention" | "ready" {
 }
 
 export const STATUS_COLORS: Record<AgentStatus, string> = {
-  // jewel-glass tones to sit on the mosaic: opal, cobalt, topaz, ruby
-  idle: "#5d6878",
-  ready: "#a8b4c6",
-  terminal: "#2f6fd6",
-  running: "#e08a1e",
-  attention: "#d0304e",
+  // Workshop palette: cream shells, amber working, ruby needs-you.
+  // Ready stays the ring's cobalt so it matches the third figure.
+  idle: "#3B3227",
+  ready: "#7C9BFF",
+  terminal: "#F3E2C4",
+  running: "#FFB547",
+  attention: "#FF4A3D",
 };
 
 export const STATUS_LABELS: Record<AgentStatus, string> = {

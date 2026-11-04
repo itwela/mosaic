@@ -237,7 +237,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       const raw = lines.join("\n");
       const state = detectScreenState(raw);
       const approval = state === "attention" ? extractApproval(raw) : null;
-      const signature = `${state}|${approval?.prompt ?? ""}|${approval?.approve ?? ""}|${approval?.deny ?? ""}`;
+      const signature = `${state}|${approval?.key ?? ""}|${approval?.approve ?? ""}|${approval?.deny ?? ""}`;
       if (signature !== lastScreenState) {
         lastScreenState = signature;
         window.dispatchEvent(new CustomEvent("mosaic-agent-screen", { detail: { id, state, approval } }));

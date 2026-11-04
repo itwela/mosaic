@@ -54,7 +54,8 @@ export default function AllRunningView({ workspaces, tabMeta, onOpenWorkspace }:
   const counts = countAll(workspaces, tabMeta);
   const arcs = entries.map(({ tab }) => TONE[statusTone(tabMeta[tab.id]?.status)]);
   const inner = workspaces.map((ws) => TONE[workspaceTone(countWorkspace(ws, tabMeta))]);
-  const live = counts.terminals + counts.working + counts.ready + counts.attention;
+  const idle = counts.terminals + counts.ready;
+  const live = counts.working + counts.attention + idle;
 
   return (
     <div className="all-running">
@@ -65,7 +66,7 @@ export default function AllRunningView({ workspaces, tabMeta, onOpenWorkspace }:
         <div className="all-core-stats">
           <div><div className="num ca" style={{ color: "var(--amb)" }}>{counts.working.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--amb)" }}>Working</div></div>
           <div><div className="num ca" style={{ color: "var(--ruby)" }}>{counts.attention.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--ruby)" }}>Need you</div></div>
-          <div><div className="num ca">{counts.ready.toString().padStart(2, "0")}</div><div className="lbl">Ready</div></div>
+          <div><div className="num ca">{idle.toString().padStart(2, "0")}</div><div className="lbl">Idle</div></div>
         </div>
         <div className="all-core-note">Hover a terminal to focus it · click the workspace name to jump there</div>
       </section>

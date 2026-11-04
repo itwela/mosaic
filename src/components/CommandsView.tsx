@@ -1,11 +1,10 @@
-import { CSSProperties, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
   allCategories,
   heatLevel,
   HEAT_COLORS,
   HEAT_LABELS,
-  HeatLevel,
   incrementCopy,
   removeCommand,
   setCategory,
@@ -13,42 +12,13 @@ import {
 } from "../store/commands";
 import "./CommandsView.css";
 
-// How much light comes through a card's glass: used commands glow, cold ones stay dim.
-const GLASS_DIM: Record<HeatLevel, number> = { cold: 0.55, cool: 0.4, warm: 0.22, hot: 0.08, hotter: 0 };
-
-// Each card shows its own stable patch of the mosaic in its glass band.
-function glassOffset(id: string) {
-  let h = 0;
-  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return `${-(h % 1000)}px ${-((h >> 10) % 700)}px`;
-}
-
 type SortMode = "hot" | "recent" | "az";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  git: "#e0554a",
-  npm: "#c14b4b",
-  js: "#e0a03a",
-  docker: "#3a8fd4",
-  fs: "#7aab9c",
-  python: "#4b7fc9",
-  network: "#9a8cff",
-  ssh: "#c98a5a",
-  agent: "#a78bfa",
-  brew: "#d4a24a",
-  rust: "#c97d3a",
-  db: "#5b8a6a",
-  aws: "#e07a3a",
-  cloud: "#3a9cd4",
-  media: "#b05cff",
-  sync: "#5b8def",
-  archive: "#8a7a6a",
-  system: "#8b949e",
-  other: "#5c6b7a",
-};
-
-function categoryColor(cat: string) {
-  return CATEGORY_COLORS[cat] ?? "#5c6b7a";
+function categoryColor(cat: string): string {
+  const known: Record<string, string> = {
+    npm: "#c14b4b", fs: "#7aab9c", git: "#e0554a", other: "#A39377",
+  };
+  return known[cat] ?? "#A39377";
 }
 
 export default function CommandsView() {
@@ -174,61 +144,40 @@ export default function CommandsView() {
                 : "No matches."}
             </div>
           ) : (
-            <div className="commands-grid">
+            <div className="commands-table">
               {visible.map((cmd) => {
                 const heat = heatLevel(cmd.copyCount);
+                const rank = ["cold", "cool", "warm", "hot", "hotter"].indexOf(heat);
                 return (
-                  <div
-                    key={cmd.id}
-                    className="commands-item"
-                    style={{
-                      borderLeftColor: HEAT_COLORS[heat],
-                      "--heat": HEAT_COLORS[heat],
-                      "--cat": categoryColor(cmd.category),
-                      "--glass-pos": glassOffset(cmd.id),
-                      "--glass-dim": GLASS_DIM[heat],
-                    } as CSSProperties}
-                  >
-                    <div className="commands-item-top">
-                      <span
-                        className="commands-heat-dot"
-                        style={{ background: HEAT_COLORS[heat], boxShadow: `0 0 8px ${HEAT_COLORS[heat]}55` }}
-                        title={`${HEAT_LABELS[heat]} — ${cmd.copyCount} cop${cmd.copyCount === 1 ? "y" : "ies"}`}
-                      />
-                      <span className="commands-heat-count" title={`${cmd.copyCount} cop${cmd.copyCount === 1 ? "y" : "ies"}`}>
-                        {cmd.copyCount > 0 ? `${cmd.copyCount}×` : ""}
-                      </span>
-                      <span
-                        className="commands-cat-chip"
-                        style={{ color: categoryColor(cmd.category), borderColor: `${categoryColor(cmd.category)}55` }}
-                      >
-                        {cmd.category}
-                      </span>
-                    </div>
-                    {cmd.label && <div className="commands-item-label">{cmd.label}</div>}
-                    <code className="commands-item-text" onClick={() => copy(cmd.text, cmd.id)} title="Click to copy">
-                      {cmd.text}
-                    </code>
-                    <div className="commands-item-actions">
+                  <div key={cmd.id} className="commands-row">
+                    <span className="commands-pips" title={`${HEAT_LABELS[heat]} — ${cmd.copyCount}×`}>
+                      {[0, 1, 2, 3, 4].map((pip) => (
+                        <i key={pip} style={pip <= rank ? { background: HEAT_COLORS[heat], boxShadow: `0 0 6px ${HEAT_COLORS[heat]}` } : undefined} />
+                      ))}
+                    </span>
+                    <code className="commands-row-text" title={cmd.text}>{cmd.text}</code>
+                    <span className="commands-row-label">{cmd.label || "—"}</span>
+                    <select
+                      className="commands-cat-select"
+                      value={cmd.category}
+                      onChange={(e) => setCategory(cmd.id, e.target.value)}
+                      title="Change category"
+                    >
+                      {categories.includes(cmd.category) ? null : (
+                        <option value={cmd.category}>{cmd.category}</option>
+                      )}
+                      {categories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                      {!categories.includes("other") && <option value="other">other</option>}
+                    </select>
+                    <span className="commands-row-count">{cmd.copyCount}×</span>
+                    <span className="commands-row-actions">
                       <button className="commands-copy-btn" onClick={() => copy(cmd.text, cmd.id)}>
                         {copiedId === cmd.id ? "Copied" : "Copy"}
                       </button>
-                      <select
-                        className="commands-cat-select"
-                        value={cmd.category}
-                        onChange={(e) => setCategory(cmd.id, e.target.value)}
-                        title="Change category"
-                      >
-                        {categories.includes(cmd.category) ? null : (
-                          <option value={cmd.category}>{cmd.category}</option>
-                        )}
-                        {categories.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                        {!categories.includes("other") && <option value="other">other</option>}
-                      </select>
                       <button className="commands-delete-btn" onClick={() => removeCommand(cmd.id)} title="Delete">×</button>
-                    </div>
+                    </span>
                   </div>
                 );
               })}

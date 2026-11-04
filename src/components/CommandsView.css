@@ -260,6 +260,53 @@
   margin-top: 2px;
 }
 
+.commands-table {
+  border: 1px solid rgba(243, 226, 196, 0.16);
+  background: rgba(18, 13, 8, 0.55);
+}
+
+.commands-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1.5fr) minmax(120px, 1fr) 110px 48px 92px;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(243, 226, 196, 0.1);
+}
+
+.commands-row:hover { background: rgba(243, 226, 196, 0.04); }
+
+.commands-pips { display: flex; gap: 3px; }
+.commands-pips i { width: 8px; height: 8px; background: rgba(243, 226, 196, 0.12); }
+
+.commands-row-text,
+.commands-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commands-row-text {
+  font: 400 13px var(--font-mono, ui-monospace, monospace);
+  color: var(--cream);
+}
+
+.commands-row-label {
+  font: 500 12px var(--font-display, "Chakra Petch", sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
+
+.commands-row-count {
+  font: 12px var(--font-mono, ui-monospace, monospace);
+  text-align: right;
+  color: var(--cream-dim);
+}
+
+.commands-row-actions { display: flex; justify-content: flex-end; gap: 6px; align-items: center; }
+
 .commands-copy-btn {
   background: none;
   border: 1px solid var(--border);
