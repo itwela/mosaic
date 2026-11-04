@@ -73,11 +73,32 @@ test("prose that mentions do you want to is not a live dialog", () => {
   assert.equal(detectScreenState(buried), "running");
 });
 
-test("numbered Yes/No lines alone are not a permission dialog", () => {
+test("(a) generic Yes/No lines do not open the card, including under a handbook header", () => {
   const shipped = "1. Yes we shipped the patch\n2. No issues found in CI";
   assert.notEqual(detectScreenState(shipped), "attention");
   const handbook = "From the handbook:\n1. Yes we shipped the patch\n2. No issues found in CI";
   assert.notEqual(detectScreenState(handbook), "attention");
-  const scrolled = "1. Yes, proceed\n2. No, and tell Codex what to do";
-  assert.notEqual(detectScreenState(scrolled), "attention");
+});
+
+test("(b) a header-only Allow prompt arms the card but sends nothing", () => {
+  const header = "Allow Bash(rm -rf public/old-icons)?";
+  assert.equal(detectScreenState(header), "attention");
+  const offer = extractApproval(header);
+  assert.equal(offer.approve, null);
+  assert.equal(offer.deny, null);
+});
+
+test("(c) a Codex menu with the question scrolled off sends 1 and 2", () => {
+  const rows = "1. Yes, proceed\n2. No, and tell Codex what to do";
+  assert.equal(detectScreenState(rows), "attention");
+  const offer = extractApproval(rows);
+  assert.equal(offer.approve, "1\r");
+  assert.equal(offer.deny, "2\r");
+});
+
+test("(d) Claude's three-option menu: Approve is 1, Deny is 3", () => {
+  assert.equal(detectScreenState(CLAUDE_THREE), "attention");
+  const offer = extractApproval(CLAUDE_THREE);
+  assert.equal(offer.approve, "1\r");
+  assert.equal(offer.deny, "3\r");
 });

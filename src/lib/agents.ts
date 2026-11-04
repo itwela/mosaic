@@ -162,6 +162,23 @@ function isNo(label: string): boolean {
   return label.toLowerCase().startsWith("no");
 }
 
+// Permission wording, not any line that happens to start with Yes or No.
+// "Yes, proceed" and "No, and tell Codex…" are a dialog. "Yes we shipped the patch" is not.
+function isPermissionChoice(label: string): boolean {
+  const text = label.toLowerCase();
+  return /^yes,\s+(?:proceed|just this once)\b/.test(text)
+    || /^yes,?\s+and\s+don'?t\s+ask\s+again\b/.test(text)
+    || /^no,\s+and\s+tell\s+(?:claude|codex)\b/.test(text)
+    || /^no,\s+(?:suggest changes|deny|and block|continue without)\b/.test(text)
+    || /^allow\s+(?:once|for this session|tool for this session|all server tools)\b/.test(text);
+}
+
+function permissionRowsAtEnd(flat: string): boolean {
+  const choices = parseChoices(flat);
+  if (!choices.some((choice) => isPermissionChoice(choice.label))) return false;
+  return flat.trimEnd().endsWith(choices[choices.length - 1].label);
+}
+
 // The text after a permission header is its option rows, and nothing else.
 function optionsOnly(after: string): boolean {
   const choices = parseChoices(after);
@@ -221,9 +238,10 @@ const READY_RULES: RegExp[] = [
 export function detectScreenState(screen: string): AgentScreenState {
   const lines = screenLines(screen);
   const flat = flatScreen(lines).toLowerCase();
-  // A permission header at the bottom, alone or with its own option rows.
-  // Numbered Yes/No lines by themselves are a list, not a dialog.
-  if (permissionAtEnd(flat)) return "attention";
+  // A permission header at the bottom, or option rows whose labels are the
+  // dialog itself ("Yes, proceed", "No, and tell Codex…") after the question
+  // has scrolled off. "1. Yes we shipped the patch" is not that dialog.
+  if (permissionAtEnd(flat) || permissionRowsAtEnd(flat)) return "attention";
   if (/(?:waiting for (?:your|user) (?:input|approval)|permission required)\s*$/.test(flat)) return "attention";
   if (RUNNING_RULES.some((rule) => rule.test(flat))) return "running";
   if (READY_RULES.some((rule) => rule.test(flat))) return "ready";
