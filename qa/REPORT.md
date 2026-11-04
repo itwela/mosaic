@@ -1,48 +1,57 @@
-# Mosaic redesign QA — round 4
+# Mosaic redesign QA — round 5
 
-**Score: 8/10.** Header-only Approve and Deny stay disabled, the 3-option Deny is `3\r`, the log-line false positive is gone, and the ring says THIS WORKSPACE. A real Codex menu whose question has scrolled off the last 24 lines is no longer a dialog, so this is not a 9.
+**Score: 9/10.** The scrolled-off Codex menu opens the card again and sends `1\r` / `2\r`, the shipped/CI list stays quiet, and the new tests assert those results. What is left is the card saying "Waiting for approval" when the question is gone, and a numbered line that only starts with a permission phrase.
 
-Rechecked `fd79cb5`. Vite, Tauri stubbed, prompts through `pty-data`, 1440×900. `npm test` 7/7. `tsc --noEmit` passed. `cargo +stable check` passed. `cargo +stable test` passed.
+Rechecked `8f16b26`. Vite, Tauri stubbed, prompts through `pty-data`, 1440×900. `npm test` 10/10. `tsc --noEmit` passed. `cargo +stable check` passed. `cargo +stable test` passed.
+
+## Tests are real assertions
+
+`tests/agents.test.ts` is 10 tests, not 7. None of the new ones are tautological.
+
+| Test | What it checks |
+| --- | --- |
+| (a) lines 76–81 | `1. Yes we shipped the patch` / `2. No issues found in CI` is not attention, with and without `From the handbook:`. |
+| (b) lines 83–89 | Header-only Allow Bash is attention and both keystrokes are `null`. |
+| (c) lines 91–97 | `1. Yes, proceed` / `2. No, and tell Codex what to do` is attention, Approve `1\r`, Deny `2\r`. |
+| (d) lines 99–104 | Same 3-option menu as test 2: Approve `1\r`, Deny `3\r`. Redundant with test 2, and it still checks the numbers. |
 
 ## Verified
 
-| Claim | Result |
-| --- | --- |
-| Header-only Allow | Card shows the full `Allow Bash(rm -rf public/old-icons)?`. Approve and Deny are `disabled`, titles "Waiting until the Yes/No row is visible". Clicking Deny wrote nothing. `qa/screenshots/app-bellhop.png`. |
-| Rows then Deny | After `1. Yes` / `2. Yes, and don't ask again` / `3. No, and tell Claude…` both buttons enabled. Deny wrote `3\r`. Queue became Nothing waiting. `qa/screenshots/app-after-deny.png`. |
-| `Allow WebFetch?` | Attention, Approve and Deny null until rows exist. With `1. Yes` / `2. No`, keys are `1\r` / `2\r`. |
-| Wrapped Allow | Prompt is `Allow Bash(rm -rf public/old-icons)?`. No guessed number. |
-| Codex upload | Full sentence, `y\r` / `n\r`. The visible bar's Approve was enabled and wrote `y\r`. |
-| Codex numbered, question on screen | `Would you like to run / make the following edits / grant these permissions` → `1\r` / `2\r`. A `›` under the rows still detects. |
-| Claude 2-option, reordered, 4-option | Deny is the first label that starts with No. `Yes, and don't ask again` is not that label. |
-| `1. Yes we shipped the patch` / `2. No issues found in CI` | Not attention, including with `From the handbook:` above it. Written into Nym's terminal: the card stayed Nothing waiting. |
-| Plain prose | `I already asked do you want to proceed? The user said yes yesterday.` is `unknown`. |
-| Antigravity | Full sentence visible. Client height equals scroll height (59px). Line clamp is gone (`UsagePanel.css`). |
-| Ring caption | Workspace ring is **THIS WORKSPACE**. Four tabs, 2 working / 1 need-you / 1 shell: center **04**, labels **02 / 01 / 00**. |
-| Tests | Still 7. The 3-option Deny `3\r` assertion is test 2 (already there). Header-only null keys are tests 4 and 5. `Yes we shipped` / `No issues found` is test 7 (`tests/agents.test.ts:76-82`). That test replaced the old one that required scrolled-off option rows to be a dialog. |
+- Scrolled-off Codex rows open the incoming card with Approve and Deny enabled. Approve wrote `1\r`. `qa/screenshots/app-scrolled.png`.
+- Scrolled-off Claude `1. Yes` / `2. Yes, and don't ask again` / `3. No, and tell Claude what to do differently` is attention, Approve `1\r`, Deny `3\r`. A fourth `No, and stop` does not steal Deny. Reversed order sends Approve `2\r` and Deny `1\r`.
+- `1. Yes we shipped the patch` / `2. No issues found in CI` stays quiet, including under `From the handbook:`. A live write of that list did not open a card.
+- `Plan / 1. Install dependencies / 2. Run the tests / 3. Ship it` stays quiet.
+- Plain "do you want to proceed?" prose stays `unknown`.
+- Header-only Allow Bash and Allow WebFetch stay attention with null keys. With rows, Allow Bash Deny is `3\r` and WebFetch `1. Yes` / `2. No` is `1\r` / `2\r`.
+- Wrapped Allow is the full question. Codex upload is the full sentence and `y\r` / `n\r`. Question-on-screen Codex menus (`run the following command`, `make the following edits`, `grant these permissions`) are `1\r` / `2\r`. ANSI around Allow Bash plus a 2-option menu is `1\r` / `2\r`.
+- Ring on the four-tab mix is **04 THIS WORKSPACE** beside **02 / 01 / 00**. Antigravity's sentence is complete. Usage says `updated 0m ago`.
+- Re-ran: hot-link search and launch, tab rename, Zen panel, command table, All Running Idle and the toggle back, absent field notes. Drag, glyphs, and chip colors were not re-clicked; `8f16b26` does not touch those files, and they passed on `fd79cb5`.
 
-Regressions that still pass: chips `#F3E2C4` / `#FFB547` / `#FF4A3D`, Idle, All Running toggle, five usage cards, `updated 0m ago`, heat table, ⌸ / ⌫, no folder glyph, hot links search / sort / launch, tab rename, drag onto Hala, Zen panel, absent field-notes files. ANSI around Allow Bash plus a 2-option menu is `1\r` / `2\r`. A buried Allow header under 30 lines stays `running`.
+## Remaining
 
-## Still broken
+### P3 — The scrolled-off card says "Waiting for approval"
 
-### P2 — Option rows alone are no longer a dialog
+The menu is detected and the keys are right. `fullQuestion` finds nothing once the question has left the window, so the title falls back to the default (`src/lib/agents.ts:332`). The shot shows "Waiting for approval" with both buttons enabled.
 
-`detectScreenState` only returns attention from `permissionAtEnd` (`src/lib/agents.ts:224`). A permission header has to be inside the last 24 lines.
+Expected: the card shows the rows that are actually on screen, such as `1. Yes, proceed` / `2. No, and tell Codex what to do`.
 
-`1. Yes, proceed` / `2. No, and tell Codex what to do` with the question scrolled off is `unknown`. Round 3 treated that as a live Codex menu, and the previous test required it. Test 7 now asserts the opposite (`tests/agents.test.ts:81-82`).
+### P3 — One permission-shaped line is enough
 
-`1. Yes we shipped` / `2. No issues found` should stay quiet, and it does. The real permission labels can be told apart from that log. Expected: rows whose labels are `Yes`, `Yes, proceed`, or `No, and tell Codex/Claude` still arm the bar when the question has left the window. A status log does not.
+`permissionRowsAtEnd` (`src/lib/agents.ts:176-179`) is true when any numbered label matches `isPermissionChoice` and the screen ends on the last numbered line. It does not require a Yes row and a No row.
 
-A handbook line that quotes the real menu (`do you want to proceed?` and then `1. Yes` / `2. No, and tell Claude…`) is still attention, because that string is the dialog. The shipped/issues handbook in the test is not.
+These opened a card:
+
+- `1. Yes, proceed to chapter two of the book` / `2. Leave the ending` → attention, Approve `1\r`, Deny null.
+- `1. No, and tell Claude the migration can wait until Friday` → attention, Deny `1\r`.
+
+Expected: a permission menu, meaning a Yes-shaped row and a No-shaped row together. A sentence that only starts with "Yes, proceed" or "No, and tell Claude" stays quiet. `1. Yes` / `2. No` with nothing after them also stays quiet today (`isPermissionChoice` wants "No, and tell…" or "don't ask again"). The long Claude menu from the request does not have that gap.
 
 ## Needs a Mac
 
-A live Claude or Codex TUI accepting the keystroke, including the moment before the option rows paint, real provider logins, Tuck's window geometry, `sips` thumbnails, the Desktop permission URLs, and Zen Studio listening on port 3003.
+A live Claude or Codex TUI accepting the keystroke, including the frame before the option rows paint, real provider logins, Tuck's window geometry, `sips` thumbnails, the Desktop permission URLs, and Zen Studio listening on port 3003.
 
 ## Shots
 
-- `qa/screenshots/app-bellhop.png` — header-only card, ring 04 THIS WORKSPACE, 02/01/00, full Antigravity line
-- `qa/screenshots/app-after-deny.png` — Nothing waiting after Deny `3\r`
-- `qa/screenshots/app-ring.png` — shipped/issues log did not open a card
-- `qa/screenshots/app-all.png` — Idle, center caption LIVE
+- `qa/screenshots/app-scrolled.png` — scrolled Codex card, ring 04 THIS WORKSPACE, full Antigravity line
 - `qa/screenshots/app-commands.png`
+- `qa/screenshots/app-all.png`
