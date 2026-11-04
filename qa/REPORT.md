@@ -1,112 +1,71 @@
-# Mosaic redesign QA — round 2
+# Mosaic redesign QA — round 3
 
-**Score: 7/10.** The round-1 approval alarm and the chrome checklist are fixed and rechecked; Deny on Claude's three-option menu still types "Yes, and don't ask again", and the ring is 03 beside the guide's 02/01/00 rather than 04.
+**Score: 8/10.** The claimed keystrokes, the full wrapped question, and a ring of 04 beside 02/01/00 all check out. A screen that merely ends in numbered Yes/No lines still opens the red card, so this is not a 9.
 
-Rebased `qa/mosaic-redesign-review` onto `afacbf6` (`cursor/mosaic-redesign-6c1c`). The builder's checklist was not taken as evidence. Same method as round 1: Vite at 1440×900, Tauri stubbed, prompt text written through the `pty-data-*` listener. The guide was remeasured from the mockup after boot: Working **02**, Need you **01**, Ready **00**, ring **04**.
+Rechecked `180d0ac` on `cursor/mosaic-redesign-6c1c` after rebasing `qa/mosaic-redesign-review`. Vite, Tauri stubbed, prompts written through `pty-data`, 1440×900. `npm test` is 7/7. `npx tsc --noEmit` passed. `cargo +stable check` passed. `cargo +stable test` passed (`gallery_filters_sorts_and_limits_to_thirty`).
 
-## Verified fixed
+## Verified
 
-| Item | What I saw |
+| Claim | Result |
 | --- | --- |
-| P1 Allow Bash card | Incoming card: **Hala Card · Claude Code · 0m ago · Allow Bash(rm -rf public/old-icons)?** with Approve, Deny, Open. The bytes were ANSI-colored (`ESC[31m…ESC[0m`) and xterm still produced the question. `qa/screenshots/app-bellhop.png`. |
-| P1 Approve clears that card | Approve wrote `1\r`. The Hala card left. A second, different prompt (Nym, "Do you want to proceed?") stayed, which is the queue, not the same alarm. `qa/screenshots/app-after-approve.png`. |
-| P1 Deny clears | Deny on that Nym card wrote `2\r` (its menu is `1. Yes` / `2. No`) and the card became **Nothing waiting**. `qa/screenshots/app-after-deny.png`. |
-| Codex upload sentence | `Upload to Vercel blob and replace / the links in /resources?` is attention. The Codex pane showed the red Approve / Deny / Reply bar. Approve wrote `y\r` (no numbered Yes on that sentence) and the bar left. |
-| Scrollback | After the answer, burying Allow Bash under 40 lines of ordinary output did not reopen the card. Painting the same question at the bottom again did reopen it. That matches `App.tsx:233-236`: once the prompt leaves the live window the dismissal is dropped, so a new paint can light it; text that has scrolled out of the last screenful does not. |
-| Chips | Active workspace chips computed to `rgb(243, 226, 196)`, `rgb(255, 181, 71)`, `rgb(255, 74, 61)`. |
-| Idle + toggle | All Running's third label is **Idle**. A second click returned the title to Bellhop / Kodawari. `qa/screenshots/app-all.png`. |
-| Usage row | Five cards (Claude, Codex, Cursor, Antigravity, DeepSeek) share one y position. Hot Links is 378px wide and AI usage is 768px, the extra columns. `qa/screenshots/app-bellhop.png`. |
-| Commands | One `.commands-table` with heat pips, command, label, category, count, Copy. Search "postgres" left `npm run db:local`. `qa/screenshots/app-commands.png`. |
-| Age | Incoming meta is `0m ago`. |
-| Glyphs | Visible terminal headers' toolbox and clear buttons read ⌸ and ⌫. |
-| Folder glyph | No `.screenshot-folder` in the strip. Empty-folder copy still offers choosing a folder. |
-| CRT grade | `.g-grain`, `.g-rgb`, and `.g-scan` at opacity 0.55 are in the tree. Title and label `text-shadow` is the red/blue split (`workshop.css:98-100`). Terminal canvases and fields are excluded (`workshop.css:101-107`). |
-| Regressions | Sidebar chips showed 2 shells / 2 working / 1 attention and tracked the answers. Hot links search, A–Z order, and Launch (4 `open_path` calls) worked. Drag moved a panel from Bellhop (6→5) onto Hala (1→2). Tab double-click opened the rename field. Window → Zen Studio added the panel. Field notes with the gitignored files absent says there is no client data and does not show 92/133. `git diff 2d2cbbd..afacbf6` does not touch `my-clients.js`, `workstreams-data.js`, or `files/`. |
+| Claude 2-option | `1. Yes` / `2. No, and tell Claude what to do differently` → Approve `1\r`, Deny `2\r`. |
+| Claude 3-option | `1. Yes` / `2. Yes, and don't ask again` / `3. No, and tell Claude what to do differently` → Approve `1\r`, Deny `3\r`. Live Deny on Nym wrote `3\r` and the queue became Nothing waiting. `qa/screenshots/app-after-deny.png`. |
+| Options in another order | `1. No…` / `2. Yes, and don't ask again` / `3. Yes` → Approve `3\r`, Deny `1\r`. |
+| Four options | Deny is the first label that starts with No (`3\r`), not the later `4. No, and stop`. |
+| `Yes, don't ask again` without "and" | Still not treated as the plain Yes. Deny stays `3\r`. |
+| Wrapped Allow Bash | Card text is the full `Allow Bash(rm -rf public/old-icons)?`, not `)?`. Approve on that header-only prompt wrote `1\r`. `qa/screenshots/app-bellhop.png`. |
+| Codex upload sentence | Detected. Prompt is the whole sentence. Approve `y\r`, Deny `n\r`. The visible bar's Approve wrote `y\r`. |
+| Codex numbered rows | `1. Yes, proceed` / `2. No, and tell Codex…` → `1\r` / `2\r`, including when the question has scrolled off. A `›` composer under the rows still detects. |
+| Prose "do you want to proceed?" | Alone, and with another sentence after it, state is `unknown`. |
+| Buried answered prompt | After Allow Bash was answered, 36 ordinary lines did not reopen the card. Painting the question at the bottom again did. |
+| Two agents at once | Incoming read "1 of 2". Approving Hala left Nym's "Do you want to proceed?". `qa/screenshots/app-after-approve.png`. |
+| Ring | Four terminal tabs, statuses 2 working / 1 need-you / 1 shell: center **04**, labels **02 Working / 01 Need you / 00 Ready**. That is the accepted call, and the two sides are consistent with each other. The count is tabs, not panes: `terminalPanes` adds `panel.tabs.length` (`src/lib/approvals.ts:54-58`). Two tabs in one pane count as two. |
+| Usage age | Header reads `updated 0m ago`. |
+| Regressions | Chips `#F3E2C4` / `#FFB547` / `#FF4A3D`. Idle label, All Running toggles back. Five usage cards on one row. Commands heat table, postgres search. ⌸ and ⌫. No folder glyph. Hot links search, A–Z, Launch (4 `open_path`s). Tab rename. Drag onto Hala. Zen Studio panel ("Zen Studio isn't running"). Field notes files absent, no fake 92/133, and this commit does not touch them. |
 
-`npx tsc --noEmit` passed. `cargo +stable check` passed. `cargo +stable test` passed (`gallery_filters_sorts_and_limits_to_thirty`).
+## Allow Bash / Allow WebFetch with no numbers
 
-## Ring: the guide is 02/01/00 and 04, and those are not the same sum
+The code does what was claimed: no numbered rows, and the line matches `allow <name>`, so Approve is `1\r` and Deny is `2\r` (`src/lib/agents.ts:308-311`).
 
-Remeasured from the mockup (`qa/screenshots/ref-workspace.png`): center **04**, labels **02 / 01 / 00**. 2+1+0 is 3, so the guide's four figures are not a sum. The sidebar on that board shows 4 terminal sessions.
+That Approve key matches Claude Code's first option. The Deny key does not match Claude's usual menu. The dialog that actually ships is three options: 1 Yes, 2 Yes and don't ask again, 3 No. A header-only frame has not shown those rows yet, and Deny `2` is the don't-ask-again Yes, which is the round-2 bug in the case where the rows are missing. Deny `2` is right only for a two-option menu. Once the rows are on screen, the No line is chosen (verified `3\r`).
 
-On a matching mix (2 working, 1 need-you, 0 ready, 2 shell panes) the app reads center **03**, labels **02 Working / 01 Need you / 00 Ready** (`WorkspaceDashboard.tsx:51-53`, `qa/screenshots/app-bellhop.png`). The three labels match the guide. The center is their sum, so it cannot also be the guide's 04 while Ready stays 00. Shells are no longer added in; that part of the old bug is fixed.
+## Still broken
 
-The checklist's **04 beside 02/01/01** is what this formula produces when one agent is Ready. It is internally consistent. It is not the board printed in the guide, which has Ready at 00.
+### P2 — A trailing Yes/No list is a dialog, even in prose or a log
 
-All Running is consistent with the same rule: center 07 beside 03 Working / 02 Need you / 02 Idle, and 3+2+2=7 (`AllRunningView.tsx:57-69`). Idle there is shells plus ready.
+`choicesAtEnd` (`src/lib/agents.ts:154-169`) treats the screen as attention when the bottom lines are numbered, one label starts with "yes" (and is not "don't ask again"), and another starts with "no".
 
-## New defects
+Both of these light the card and offer `1\r` / `2\r`:
 
-### P1 — Deny on Claude's three-option menu types "Yes, and don't ask again"
+- `The handbook shows an example of do you want to proceed?` followed by `1. Yes` / `2. No, and tell Claude what to do differently`.
+- `1. Yes we shipped the patch` / `2. No issues found in CI`, with no permission question at all. The card title is then "Waiting for approval".
 
-`Do you want to proceed?` with
+The second one was also written into Nym's live terminal and opened the incoming card (`qa/screenshots/app-ring.png`).
 
-```
-1. Yes
-2. Yes, and don't ask again
-3. No, and tell Claude what to do differently
-```
+Expected: a permission dialog, or option rows whose labels are the real choices (`Yes`, `No, and tell Claude…`). A status log or a handbook example stays quiet.
 
-is detected, and Approve is `1\r`. Deny is `2\r`.
+### P2 — Header-only Deny is hard-coded to 2
 
-`extractApproval` treats a line as No when it contains `no`, `deny`, `don't`, or `block` (`src/lib/agents.ts:284`). Option 2 matches `don't`, and it is found before option 3. Deny would type the yes that also stops future prompts.
+`src/lib/agents.ts:311`. Expected: Deny waits until a line that starts with No is on screen, then sends that number. On Claude's three-option menu that number is 3, not 2.
 
-Expected: Deny sends `3\r`, the line that is actually No. A two-option menu (`1. Yes` / `2. No, and tell Claude`) does send `2\r`, and that path was checked live.
+### P3 — Antigravity line is still clipped
 
-### P2 — Any "do you want to …?" sentence lights the alarm
+Not claimed fixed. The card's note is line-clamped (`src/components/UsagePanel.css:112-120`). Measured client height 45px against a scroll height of 59px, so "Open Antigravity to see its quota (it reports usage only while running)." is cut to "…usage only." Expected: the full sentence, as on the guide's usage card.
 
-`I already asked do you want to proceed? The user said yes yesterday.` is `attention`, with Approve `1\r` and Deny `2\r`.
+### P3 — The ring caption says PANES
 
-The choice half of the Claude rule includes a bare `\?` (`src/lib/agents.ts:138`), and a second rule matches the question with no option rows (`src/lib/agents.ts:171`). The comment above the rule table (`agents.ts:110-112`) says anchoring on the question alone matches an agent describing an approval. That is what this sentence is.
-
-Expected: a mention of the question in ordinary output stays off the red card. The live dialog, with its option rows or an `Allow Tool(...)?` line, is the card.
-
-### P2 — A split Allow line is shown as ")?"
-
-`Allow Bash(\nrm -rf public/old-icons\n)?` is detected, and the key is the full question, but `extractApproval` uses the last line that ends in `?` (`src/lib/agents.ts:279-285`). That line is `)?`, so the incoming card would title itself `)?`.
-
-The wrapped upload sentence has the same picker: the card prompt is `the links in /resources?` rather than the whole sentence. The one-line form `Upload to Vercel blob and replace the links?` is kept whole.
-
-Expected: the card shows the question the guide prints, including when the closing `?` sits on its own line.
-
-### P2 — Center is 03 where the guide prints 04
-
-Covered above. Labels 02/01/00 match. Center does not. `WorkspaceDashboard.tsx:53`.
-
-## P3
-
-- `Allow WebFetch?` with no parentheses is `unknown` (`src/lib/agents.ts:170` requires `(...)`). `Allow Edit(src/App.tsx)?` and `Allow Bash(...)?` are detected.
-- The usage header still says "updated just now" (`UsagePanel.tsx` `ago`, around the 138–143 definitions). The incoming card is `0m ago`. The guide's usage line is a minute stamp ("updated 2m ago").
-- The five usage cards fit one row and the Antigravity sentence wraps hard inside its fifth. Readable, tight.
-- Gemini `Allow execution of` is detected. The extracted prompt is the option row `1. Allow once`, same last-match behavior as the split Allow line.
-
-## Variants that did detect
-
-Checked through the app's own `detectScreenState` / `extractApproval`, plus the live ANSI Allow Bash write:
-
-- `Allow Bash(rm -rf public/old-icons)?` alone, and with `1. Yes` / `2. No` (approve `1\r`, deny `2\r`).
-- `Allow Edit(src/App.tsx)?`.
-- `Do you want to make this edit?` with Yes / No.
-- `Would you like to run the following command?`, `make the following edits?` (`Yes, just this once`), and `grant these permissions?`.
-- Codex option rows with the question scrolled off (`1. Yes, proceed` / `2. No, and tell Codex`).
-- Claude option rows with the question scrolled off.
-- The same Allow Bash line buried under 30 lines and followed by `esc to interrupt` stays `running`.
-- ANSI color bytes around Allow Bash still detect once xterm has interpreted them (the live card) and even on the raw string.
+The guide's caption is THIS WORKSPACE. The workspace ring and All Running both say PANES (`src/components/WorkspaceDashboard.tsx:73`, `src/components/AllRunningView.tsx:65`). The number under it is the tab count described above.
 
 ## Needs a Mac
 
-Unchanged, and not claimed as done here: a live Claude or Codex TUI accepting the keystroke, real provider logins, Tuck's window geometry and always-on-top, `sips` thumbnails, the Desktop / Full Disk Access URLs, and Zen Studio actually serving on port 3003. The Zen menu still adds the panel.
+A live Claude or Codex TUI accepting the keystroke (including a header-only frame before the option rows paint), real provider logins, Tuck's window geometry and always-on-top, `sips` thumbnails, the Desktop permission URLs, and Zen Studio actually listening on port 3003. The panel itself renders and offers Open.
 
 ## Shots
 
-All 1440×900.
-
-- `qa/screenshots/ref-workspace.png` — guide, ring 04, labels 02/01/00
-- `qa/screenshots/ref-all.png`
-- `qa/screenshots/app-bellhop.png` — Allow Bash card, ring 03, five usage cards
+- `qa/screenshots/app-bellhop.png` — Allow Bash card, ring 04, labels 02/01/00, usage `updated 0m ago`
 - `qa/screenshots/app-after-approve.png` — Hala cleared, Nym still queued
 - `qa/screenshots/app-after-deny.png` — Nothing waiting
+- `qa/screenshots/app-ring.png` — prose-plus-options false positive, Zen Studio panel
 - `qa/screenshots/app-all.png` — Idle
-- `qa/screenshots/app-commands.png` — heat table, postgres search
-- `qa/screenshots/app-ring.png` — after the Codex answer, 03 Working / 00 Need you / 00 Ready
-- `qa/screenshots/app-drag.png`
+- `qa/screenshots/app-commands.png` — heat table
+- `qa/screenshots/ref-workspace.png` — guide, for the 04 / 02/01/00 comparison
