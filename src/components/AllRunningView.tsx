@@ -1,7 +1,9 @@
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, Workspace } from "../types";
 import { agentBadge, STATUS_COLORS, STATUS_LABELS, TabMeta } from "../lib/agents";
+import { countAll, statusTone, TONE, workspaceTone, countWorkspace } from "../lib/approvals";
 import { adoptTerminal, releaseTerminal } from "./Terminal";
+import StatusRing from "./StatusRing";
 import "./AllRunningView.css";
 
 interface Props {
@@ -48,30 +50,48 @@ export default function AllRunningView({ workspaces, tabMeta, onOpenWorkspace }:
   }, [all, tabMeta]);
 
   const entries = all.filter(({ tab }) => pinned.has(tab.id));
-  const cols = Math.max(1, Math.ceil(Math.sqrt(entries.length)));
+  const cols = Math.max(1, Math.ceil(Math.sqrt(Math.max(entries.length, 1))));
+  const counts = countAll(workspaces, tabMeta);
+  const arcs = entries.map(({ tab }) => TONE[statusTone(tabMeta[tab.id]?.status)]);
+  const inner = workspaces.map((ws) => TONE[workspaceTone(countWorkspace(ws, tabMeta))]);
+  const live = counts.terminals + counts.working + counts.ready + counts.attention;
 
   return (
     <div className="all-running">
-      <div className="grid-toolbar">
-        <span className="grid-workspace-name">All running · {entries.length} terminal{entries.length === 1 ? "" : "s"}</span>
+      <section className="all-core">
+        <i className="brk tl" /><i className="brk tr" /><i className="brk bl" /><i className="brk br" />
+        <div className="lbl">Fig.01 — agent core · all workspaces</div>
+        <StatusRing arcs={arcs} inner={inner} center={live} label="LIVE" size={280} />
+        <div className="all-core-stats">
+          <div><div className="num ca" style={{ color: "var(--amb)" }}>{counts.working.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--amb)" }}>Working</div></div>
+          <div><div className="num ca" style={{ color: "var(--ruby)" }}>{counts.attention.toString().padStart(2, "0")}</div><div className="lbl" style={{ color: "var(--ruby)" }}>Need you</div></div>
+          <div><div className="num ca">{counts.ready.toString().padStart(2, "0")}</div><div className="lbl">Ready</div></div>
+        </div>
+        <div className="all-core-note">Hover a terminal to focus it · click the workspace name to jump there</div>
+      </section>
+      <div className="all-running-main">
+        <div className="all-running-head">
+          <h1 className="big ca">All running</h1>
+          <span className="all-running-count">{entries.length} terminal{entries.length === 1 ? "" : "s"}</span>
+        </div>
+        {entries.length === 0 ? (
+          <div className="all-running-empty">
+            Nothing is running yet. Start a server or an agent in any workspace and it shows up here.
+          </div>
+        ) : (
+          <div className="all-running-grid" style={{ gridTemplateColumns: `repeat(${Math.min(cols, 2)}, minmax(0, 1fr))` }}>
+            {entries.map(({ tab, workspace }) => (
+              <Slot
+                key={tab.id}
+                tab={tab}
+                workspace={workspace}
+                meta={tabMeta[tab.id]}
+                onOpenWorkspace={() => onOpenWorkspace(workspace.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      {entries.length === 0 ? (
-        <div className="all-running-empty">
-          Nothing is running yet. Start a server or an agent in any workspace and it shows up here.
-        </div>
-      ) : (
-        <div className="all-running-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-          {entries.map(({ tab, workspace }) => (
-            <Slot
-              key={tab.id}
-              tab={tab}
-              workspace={workspace}
-              meta={tabMeta[tab.id]}
-              onOpenWorkspace={() => onOpenWorkspace(workspace.id)}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

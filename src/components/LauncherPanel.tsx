@@ -299,16 +299,14 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
               </div>
             )}
           </div>
-          {items.length > 0 && (
-            <button
-              className={`launcher-btn-primary ${launching ? "launcher-btn-launching" : ""}`}
-              onClick={launchAll}
-              disabled={launching}
-              title="Open everything in this launcher"
-            >
-              {launching ? "Launching…" : "▶ Launch"}
-            </button>
-          )}
+          <button
+            className={`launcher-btn-primary ${launching ? "launcher-btn-launching" : ""}`}
+            onClick={launchAll}
+            disabled={launching || items.length === 0}
+            title="Open everything in this launcher"
+          >
+            {launching ? "Launching…" : "▶ Launch"}
+          </button>
           <button className="launcher-panel-close-btn" onClick={onClosePanel} title="Close panel">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18" />
@@ -348,8 +346,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
         </div>
       )}
 
-      {items.length > 0 && (
-        <div className="launcher-toolbar">
+      <div className="launcher-toolbar">
           <div className="launcher-search-wrap">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="launcher-search-icon">
               <circle cx="11" cy="11" r="8" />
@@ -391,7 +388,6 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
             </button>
           </div>
         </div>
-      )}
 
       {errors.length > 0 && (
         <div className="launcher-errors">

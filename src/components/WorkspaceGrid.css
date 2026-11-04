@@ -82,11 +82,32 @@
 
 .grid-body {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
-  padding: 8px;
+  padding: 0;
   box-sizing: border-box;
-  background: var(--bg);
+  background: transparent;
 }
+
+.window-frame { position: relative; }
+
+.brk {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--c, var(--st, #F3E2C4));
+  pointer-events: none;
+  z-index: 4;
+  transition: inset 0.35s cubic-bezier(.2,.8,.2,1), top 0.35s, right 0.35s, bottom 0.35s, left 0.35s;
+}
+.brk.tl { left: -6px; top: -6px; border-right: 0; border-bottom: 0; }
+.brk.tr { right: -6px; top: -6px; border-left: 0; border-bottom: 0; }
+.brk.bl { left: -6px; bottom: -6px; border-right: 0; border-top: 0; }
+.brk.br { right: -6px; bottom: -6px; border-left: 0; border-top: 0; }
+.panel-container:hover .brk.tl { left: -2px; top: -2px; }
+.panel-container:hover .brk.tr { right: -2px; top: -2px; }
+.panel-container:hover .brk.bl { left: -2px; bottom: -2px; }
+.panel-container:hover .brk.br { right: -2px; bottom: -2px; }
 
 .panel-group-v,
 .panel-group-h {

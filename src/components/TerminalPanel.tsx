@@ -1,9 +1,10 @@
-import { CSSProperties, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Panel, SavedCommand, Tab } from "../types";
 import { agentBadge, STATUS_COLORS, STATUS_LABELS, TabMeta } from "../lib/agents";
+import { answerAgent } from "../lib/approvals";
 import { recordCommand } from "../store/commands";
 import { pushUndo } from "../store/undo";
 import { restoreTab } from "../store/workspaces";
@@ -24,6 +25,33 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
   const activeTab = panel.tabs.find((t) => t.id === panel.activeTabId) ?? panel.tabs[0];
   const termRefs = useRef<Map<string, TerminalHandle>>(new Map());
   const [toolboxOpen, setToolboxOpen] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [reply, setReply] = useState("");
+  const [answerError, setAnswerError] = useState("");
+  const waiting = !!activeTab && tabMeta[activeTab.id]?.status === "attention";
+  const offer = waiting && activeTab ? tabMeta[activeTab.id]?.approval : undefined;
+
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const id = (event as CustomEvent<{ id: string }>).detail?.id;
+      if (!id || !panel.tabs.some((tab) => tab.id === id)) return;
+      termRefs.current.get(id)?.focus();
+    };
+    window.addEventListener("mosaic-focus-tab", onFocus);
+    return () => window.removeEventListener("mosaic-focus-tab", onFocus);
+  }, [panel.tabs]);
+
+  async function answer(data: string) {
+    if (!activeTab) return;
+    setAnswerError("");
+    try {
+      await answerAgent(activeTab.id, data);
+      setReplyOpen(false);
+      setReply("");
+    } catch (err) {
+      setAnswerError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   function clearActiveTerminal() {
     termRefs.current.get(activeTab.id)?.clear();
@@ -179,6 +207,30 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           </svg>
         </button>
       </div>
+      {waiting && (
+        <div className="approval-bar">
+          <button className="btn pri" onClick={() => void answer(offer?.approve ?? "y\r")}>Approve ⏎</button>
+          <button className="btn danger" onClick={() => void answer(offer?.deny ?? "n\r")}>Deny</button>
+          <button className="btn" onClick={() => { setReplyOpen((open) => !open); setAnswerError(""); }}>Reply</button>
+          {answerError && <span className="approval-error">{answerError}</span>}
+        </div>
+      )}
+      {waiting && replyOpen && (
+        <form className="reply-form" onSubmit={(event) => {
+          event.preventDefault();
+          const line = reply.trim();
+          if (!line) return;
+          void answer(`${line}\r`);
+        }}>
+          <input
+            autoFocus
+            value={reply}
+            placeholder="Reply in this terminal"
+            onChange={(event) => setReply(event.target.value)}
+          />
+          <button className="btn pri" type="submit">Send</button>
+        </form>
+      )}
       <div className="terminal-body">
         {panel.tabs.map((tab) => (
           <div

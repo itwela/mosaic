@@ -188,13 +188,61 @@ export function classifyStatus(s: SessionStatus, screen: AgentScreenState = "unk
   return s.silent_ms > QUIET_MS ? "ready" : "running";
 }
 
+// What to type into a terminal that is waiting on the user. `approve` / `deny`
+// are the keystrokes for the option currently on screen (a numbered choice, or
+// y/n when the prompt has no numbers). They are written to that tab's PTY.
+export interface ApprovalOffer {
+  prompt: string;
+  approve: string;
+  deny: string;
+}
+
 export interface TabMeta {
   status: AgentStatus;
   agent: string | null;
+  approval?: ApprovalOffer;
 }
 
-export function sessionToMeta(s: SessionStatus, screen: AgentScreenState = "unknown", signals: TabSignals = {}): TabMeta {
-  return { status: classifyStatus(s, screen, signals), agent: detectAgent(s.chain) };
+const DEFAULT_APPROVAL: ApprovalOffer = {
+  prompt: "Waiting for approval",
+  approve: "y\r",
+  deny: "n\r",
+};
+
+export function sessionToMeta(
+  s: SessionStatus,
+  screen: AgentScreenState = "unknown",
+  signals: TabSignals = {},
+  approval: ApprovalOffer | null = null,
+): TabMeta {
+  const status = classifyStatus(s, screen, signals);
+  return {
+    status,
+    agent: detectAgent(s.chain),
+    approval: status === "attention" ? (approval ?? DEFAULT_APPROVAL) : undefined,
+  };
+}
+
+// Pull the question and the yes/no keystrokes out of the live screen. Numbered
+// rows ("1. Yes", "2. No") win; otherwise the answer is y / n.
+export function extractApproval(screen: string): ApprovalOffer {
+  const rows = screen.split("\n").map((line) =>
+    line.replace(/\u00a0/g, " ").replace(BOX_GLYPHS, " ").replace(/\s+/g, " ").trim(),
+  ).filter(Boolean);
+  const tail = rows.slice(-SCREEN_WINDOW);
+  const text = tail.join("\n").toLowerCase();
+  const question = [...tail].reverse().find((line) =>
+    /\?\s*$/.test(line) || /allow |do you want|would you like|permission required|waiting for/.test(line.toLowerCase()),
+  );
+  const numbered = [...text.matchAll(/(?:^|\s)(\d)\s*[.)]\s*([^\n]{0,80})/g)];
+  const yes = numbered.find((match) => /\byes\b|\ballow\b|\bproceed\b|\bapprove\b/.test(match[2]));
+  const no = numbered.find((match) => /\bno\b|\bdeny\b|\bdon'?t\b|\bblock\b/.test(match[2]));
+  const prompt = (question || DEFAULT_APPROVAL.prompt).slice(0, 220);
+  return {
+    prompt,
+    approve: yes ? `${yes[1]}\r` : DEFAULT_APPROVAL.approve,
+    deny: no ? `${no[1]}\r` : DEFAULT_APPROVAL.deny,
+  };
 }
 
 // Classify the text of a desktop notification an agent sent via OSC 9/777.

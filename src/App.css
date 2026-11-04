@@ -39,9 +39,38 @@ body,
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  position: relative;
   font-family: var(--font-body);
   color: var(--cream);
   background: var(--bg);
+}
+
+.stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.stage-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.stage-body > .all-running,
+.stage-body > .commands-view,
+.stage-body > .settings-view,
+.stage-body > .help-view,
+.stage-body > .about-view,
+.stage-body > .fieldnotes-view,
+.stage-body > .workspace-grid-wrapper {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 /* ── Shared panel drag grip ────────────────────── */

@@ -156,8 +156,41 @@ function updateClientDropdown() {
   const eyebrow = document.querySelector('#masthead-eyebrow');
   if (eyebrow) {
     const current = getCurrentClient();
-    eyebrow.textContent = current.eyebrow || `${current.name.toUpperCase()} · CHECKLISTS`;
+    eyebrow.textContent = current
+      ? (current.eyebrow || `${current.name.toUpperCase()} · CHECKLISTS`)
+      : 'FIELDNOTES';
   }
+}
+
+// Tell Mosaic's dashboard the real checklist counts. Same files, same saved
+// state as this page. No clients (the gitignored files are absent) reports empty.
+function publishProgress() {
+  const pane = new URLSearchParams(location.search).get('pane') || 'main';
+  const client = clients.length ? getCurrentClient() : null;
+  if (!client) {
+    window.parent?.postMessage({ source: 'fieldnotes', type: 'progress', pane, empty: true }, '*');
+    return;
+  }
+  const items = allItems();
+  const done = items.filter(x => x.status === 'done').length;
+  const activeCount = items.filter(x => x.status === 'in-progress').length;
+  const total = items.length;
+  const id = String(client.id || '');
+  const short = id && id.length <= 4
+    ? id.toUpperCase()
+    : String(client.name || '').split(/\s+/).map(word => word[0] || '').join('').slice(0, 3).toUpperCase();
+  window.parent?.postMessage({
+    source: 'fieldnotes',
+    type: 'progress',
+    pane,
+    empty: false,
+    client: client.name || '',
+    short,
+    done,
+    active: activeCount,
+    total,
+    remaining: Math.max(0, total - done),
+  }, '*');
 }
 
 function render() {
@@ -175,8 +208,16 @@ function render() {
     const empty = document.querySelector('#empty');
     empty.textContent = 'No clients yet. Use the client menu to add your first one.';
     empty.hidden = false;
+    const kicker = document.querySelector('#list-kicker');
+    const title = document.querySelector('#list-title');
+    if (kicker) kicker.textContent = '';
+    if (title) title.textContent = '';
+    const summary = document.querySelector('#summary');
+    if (summary) summary.innerHTML = '';
+    publishProgress();
     return;
   }
+  publishProgress();
 
   // Render Tabs with live counts and completion mechanism
   document.querySelector('#tabs').innerHTML = collections.map(x => {
@@ -942,7 +983,11 @@ async function importPackage(data) {
   return names.join(', ');
 }
 
-document.querySelector('#export').onclick = () => exportClients([getCurrentClient()], getCurrentClient().name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+document.querySelector('#export').onclick = () => {
+  const client = getCurrentClient();
+  if (!client) return;
+  exportClients([client], client.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+};
 document.querySelector('#export-all').onclick = () => exportClients(clients, 'all-clients');
 document.querySelector('#import').onclick = () => document.querySelector('#import-picker').click();
 document.querySelector('#import-picker').onchange = async event => {

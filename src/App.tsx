@@ -5,6 +5,7 @@ import { currentMonitor, getCurrentWindow, primaryMonitor } from "@tauri-apps/ap
 import { listen } from "@tauri-apps/api/event";
 import JSZip from "jszip";
 import Sidebar from "./components/Sidebar";
+import TopBar from "./components/TopBar";
 import WorkspaceGrid from "./components/WorkspaceGrid";
 import AboutView from "./components/AboutView";
 import HelpView from "./components/HelpView";
@@ -14,13 +15,16 @@ import AllRunningView from "./components/AllRunningView";
 import FieldnotesView from "./components/FieldnotesView";
 import UndoToast from "./components/UndoToast";
 import { AgentStatus, Workspace } from "./types";
-import { sessionToMeta, SessionStatus, TabMeta, AgentScreenState, TabSignals } from "./lib/agents";
-import { createWorkspaceBundle, EmbeddedFile, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces, setWorkspaceMutator } from "./store/workspaces";
+import { sessionToMeta, SessionStatus, TabMeta, AgentScreenState, TabSignals, ApprovalOffer } from "./lib/agents";
+import { AttentionTarget } from "./lib/approvals";
+import { useFieldnotesProgress } from "./lib/fieldnotesProgress";
+import { createWorkspaceBundle, EmbeddedFile, loadWorkspaces, makeFieldnotesPanel, makeLauncherPanel, makePanel, makeUsagePanel, makeZenPanel, parseWorkspaceBundle, saveWorkspaces, setWorkspaceMutator } from "./store/workspaces";
 import { insertAt, pushUndo } from "./store/undo";
 import { recordCommand } from "./store/commands";
 import "./App.css";
 import "./luxury.css";
 import "./themes/aero.css";
+import "./workshop.css";
 
 type View = "workspace" | "all" | "about" | "help" | "settings" | "commands" | "fieldnotes";
 
@@ -30,9 +34,9 @@ export default function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(loadWorkspaces);
   const [activeId, setActiveId] = useState<string>(workspaces[0].id);
   const [view, setView] = useState<View>("workspace");
-  // Field notes stays mounted after its first open so switching back is instant.
-  const [fieldnotesOpened, setFieldnotesOpened] = useState(false);
-  useEffect(() => { if (view === "fieldnotes") setFieldnotesOpened(true); }, [view]);
+  // Mounted from the start so the dashboard can read real checklist progress
+  // (including the empty state when the gitignored client files are absent).
+  const notes = useFieldnotesProgress();
   const [tabMeta, setTabMeta] = useState<Record<string, TabMeta>>({});
   const screenshotToggleRef = useRef<() => void>(() => {});
 
@@ -189,10 +193,11 @@ export default function App() {
     let disposed = false;
     let sessions: SessionStatus[] = [];
     const screens: Record<string, AgentScreenState> = {};
+    const approvals: Record<string, ApprovalOffer | null> = {};
     const signals: Record<string, TabSignals> = {};
     const update = () => {
       const map: Record<string, TabMeta> = {};
-      for (const s of sessions) map[s.id] = sessionToMeta(s, screens[s.id], signals[s.id]);
+      for (const s of sessions) map[s.id] = sessionToMeta(s, screens[s.id], signals[s.id], approvals[s.id] ?? null);
       if (!disposed) setTabMeta(map);
     };
     const onNotify = (event: Event) => {
@@ -210,8 +215,9 @@ export default function App() {
     window.addEventListener("mosaic-agent-notify", onNotify);
     window.addEventListener("mosaic-agent-input", onInput);
     const onScreen = (event: Event) => {
-      const { id, state } = (event as CustomEvent<{ id: string; state: AgentScreenState }>).detail;
+      const { id, state, approval } = (event as CustomEvent<{ id: string; state: AgentScreenState; approval: ApprovalOffer | null }>).detail;
       screens[id] = state;
+      approvals[id] = approval;
       update();
     };
     window.addEventListener("mosaic-agent-screen", onScreen);
@@ -278,6 +284,34 @@ export default function App() {
   function updateWorkspace(updated: Workspace) {
     setWorkspaces((ws) => ws.map((w) => (w.id === updated.id ? updated : w)));
   }
+
+  function addToActive(panel: Workspace["panels"][number]) {
+    setWorkspaces((all) => all.map((w) => (w.id === activeId ? { ...w, panels: [...w.panels, panel] } : w)));
+    setView("workspace");
+  }
+
+  function openAttention(target: AttentionTarget) {
+    setView("workspace");
+    setActiveId(target.workspaceId);
+    setWorkspaces((all) => all.map((w) => w.id !== target.workspaceId ? w : {
+      ...w,
+      panels: w.panels.map((panel) => panel.id === target.panelId ? { ...panel, activeTabId: target.tabId } : panel),
+    }));
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("mosaic-focus-tab", { detail: { id: target.tabId } }));
+    }, 50);
+  }
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeId) ?? workspaces[0];
+  const titles: Record<View, string> = {
+    workspace: activeWorkspace?.name ?? "Mosaic",
+    all: "All running",
+    commands: "Command database",
+    fieldnotes: "Field notes",
+    settings: "Settings",
+    help: "What's this",
+    about: "Caveman Creative",
+  };
 
   function addWorkspace(ws: Workspace) {
     setWorkspaces((prev) => [...prev, ws]);
@@ -383,6 +417,11 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="workshop-grade" aria-hidden="true">
+        <div className="g-warm" />
+        <div className="g-vig" />
+        <div className="g-scan" />
+      </div>
       <Sidebar
         workspaces={workspaces}
         activeId={activeId}
@@ -403,6 +442,17 @@ export default function App() {
         onFieldnotes={() => toggleView("fieldnotes")}
         onAllRunning={() => setView("all")}
       />
+      <div className="stage">
+      <TopBar
+        title={titles[view]}
+        onAddTerminal={() => addToActive(makePanel())}
+        onAddLauncher={() => addToActive(makeLauncherPanel())}
+        onAddUsage={() => addToActive(makeUsagePanel())}
+        onAddFieldnotes={() => addToActive(makeFieldnotesPanel())}
+        onAddZen={() => addToActive(makeZenPanel())}
+        onTuck={() => screenshotToggleRef.current()}
+      />
+      <div className="stage-body">
       {view === "all" && (
         <AllRunningView
           workspaces={workspaces}
@@ -414,7 +464,7 @@ export default function App() {
       {view === "help" && <HelpView />}
       {view === "settings" && <SettingsView />}
       {view === "commands" && <CommandsView />}
-      {fieldnotesOpened && <FieldnotesView visible={view === "fieldnotes"} />}
+      <FieldnotesView visible={view === "fieldnotes"} />
 
       {/* Keep all workspace grids mounted so terminals never restart */}
       {workspaces.map((ws) => (
@@ -425,12 +475,16 @@ export default function App() {
           <WorkspaceGrid
             active={view === "workspace" && ws.id === activeId}
             workspace={ws}
+            workspaces={workspaces}
             tabMeta={tabMeta}
+            notes={notes}
             onUpdate={updateWorkspace}
-            onToggleScreenshot={() => screenshotToggleRef.current()}
+            onOpenAttention={openAttention}
           />
         </div>
       ))}
+      </div>
+      </div>
       <UndoToast />
     </div>
   );

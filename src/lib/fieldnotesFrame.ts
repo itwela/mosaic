@@ -1,4 +1,5 @@
 import { RefObject, useEffect } from "react";
+import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 type FieldnotesWindow = Window & { __fieldnotesDrop?: (event: unknown) => void };
@@ -8,7 +9,7 @@ type FieldnotesWindow = Window & { __fieldnotesDrop?: (event: unknown) => void }
 // position shifted into the frame's coordinates.
 export function useFieldnotesDrop(frameRef: RefObject<HTMLIFrameElement | null>, enabled: boolean) {
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isTauri()) return;
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     getCurrentWebview()

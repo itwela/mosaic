@@ -15,6 +15,16 @@ saved automatically, so your layout is there next time you open it.
 
 Built with [Tauri](https://tauri.app) (Rust) + React + TypeScript.
 
+## Workshop dashboard
+
+The workspace view opens with three instruments. None of them invent numbers.
+
+- **Status ring.** Working, need-you, and ready counts come from each terminal's live session (`pty_statuses`) plus what its screen is showing. The center number is how many of this workspace's terminals are actually doing something. An idle workspace reads 00.
+- **Incoming approvals.** A terminal in another workspace that is waiting on you shows its real prompt. Approve and Deny call the existing `pty_write` command with the keystrokes for the choice on screen (a numbered option such as `1`, otherwise `y` / `n`). That types the answer into that agent's own shell. Open switches to the workspace and focuses the tab. Reply, on the terminal itself, sends a line you type.
+- **Field notes.** The Field notes page posts its checklist totals after every render. Those totals are the client's tasks plus the progress saved on this machine. `public/fieldnotes/my-clients.js`, `workstreams-data.js`, and `files/` stay gitignored and are never rewritten. If they are not on this computer, the card says so instead of showing a fake total.
+- **Clear all** hides screenshots already in the strip. It does not delete the files. A newer shot appears on the next refresh. Pick the folder once in Settings; Mosaic does not scan Desktop.
+- **AI usage** is whatever each provider reports through `provider_usage`. A missing login stays a missing login.
+
 ---
 
 ## Requirements

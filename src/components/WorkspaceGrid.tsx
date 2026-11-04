@@ -4,25 +4,29 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import { invoke } from "@tauri-apps/api/core";
 import { Panel as PanelType, Workspace } from "../types";
 import { TabMeta } from "../lib/agents";
-import ScreenshotBar from "./ScreenshotBar";
+import { AttentionTarget } from "../lib/approvals";
+import { FieldnotesProgress } from "../lib/fieldnotesProgress";
 import TerminalPanel from "./TerminalPanel";
 import LauncherPanel from "./LauncherPanel";
 import ZenPanel from "./ZenPanel";
 import UsagePanel from "./UsagePanel";
 import FieldnotesPanel from "./FieldnotesPanel";
-import { makePanel, makeLauncherPanel, makeUsagePanel, makeFieldnotesPanel, makeZenPanel, restorePanel, movePanelToWorkspace } from "../store/workspaces";
+import WorkspaceDashboard from "./WorkspaceDashboard";
+import { restorePanel, movePanelToWorkspace } from "../store/workspaces";
 import { pushUndo } from "../store/undo";
 import "./WorkspaceGrid.css";
 
 interface Props {
   workspace: Workspace;
+  workspaces: Workspace[];
   active: boolean;
   tabMeta: Record<string, TabMeta>;
+  notes: FieldnotesProgress;
   onUpdate: (ws: Workspace) => void;
-  onToggleScreenshot: () => void;
+  onOpenAttention: (target: AttentionTarget) => void;
 }
 
-export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, onToggleScreenshot }: Props) {
+export default function WorkspaceGrid({ active, workspace, workspaces, tabMeta, notes, onUpdate, onOpenAttention }: Props) {
   const panels = workspace.panels;
   const [dragSource, setDragSource] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
@@ -51,44 +55,6 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
       ...workspace,
       panels: panels.map((p) => (p.id === updated.id ? updated : p)),
     });
-  }
-
-  function addPanel() {
-    onUpdate({ ...workspace, panels: [...panels, makePanel()] });
-  }
-
-  function addLauncher() {
-    onUpdate({ ...workspace, panels: [...panels, makeLauncherPanel()] });
-  }
-
-  function addFieldnotes() {
-    onUpdate({ ...workspace, panels: [...panels, makeFieldnotesPanel()] });
-  }
-
-  function addZen() {
-    onUpdate({ ...workspace, panels: [...panels, makeZenPanel()] });
-  }
-
-  function addUsage() {
-    onUpdate({ ...workspace, panels: [...panels, makeUsagePanel()] });
-  }
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: PointerEvent) => {
-      if (!(e.target as HTMLElement).closest(".grid-menu-wrap")) setMenuOpen(false);
-    };
-    window.addEventListener("pointerdown", close);
-    return () => window.removeEventListener("pointerdown", close);
-  }, [menuOpen]);
-
-  function clearAll() {
-    for (const panel of panels) {
-      // Ctrl+L (form feed) instead of typing "clear\r": it clears the screen in
-      // any folder without executing a command or mangling half-typed input.
-      invoke("pty_write", { id: panel.activeTabId, data: "\x0c" }).catch(console.error);
-    }
   }
 
   function removePanel(id: string) {
@@ -198,36 +164,15 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
 
   return (
     <div className="workspace-grid-wrapper">
-      <div className="grid-toolbar">
-        <span className="grid-workspace-name">{workspace.name}</span>
-        <ScreenshotBar active={active} />
-        <div className="grid-toolbar-actions">
-          <button className="grid-clear-all" onClick={clearAll} title="Clear all terminals">
-            clear all
-          </button>
-          <button className="grid-add-panel" onClick={addPanel} title="Add terminal panel">
-            + terminal
-          </button>
-          <div className="grid-menu-wrap">
-            <button className={`grid-add-launcher ${menuOpen ? "grid-menu-open" : ""}`} onClick={() => setMenuOpen((o) => !o)} title="Add a window">
-              + window ▾
-            </button>
-            {menuOpen && (
-              <div className="grid-menu">
-                <button onClick={() => { setMenuOpen(false); addPanel(); }}>Terminal</button>
-                <button onClick={() => { setMenuOpen(false); addLauncher(); }}>Launcher board</button>
-                <button onClick={() => { setMenuOpen(false); addUsage(); }}>AI usage</button>
-                <button onClick={() => { setMenuOpen(false); addFieldnotes(); }}>Field notes</button>
-                <button onClick={() => { setMenuOpen(false); addZen(); }}>Zen Studio</button>
-              </div>
-            )}
-          </div>
-          <button className="grid-tuck-btn" onClick={onToggleScreenshot} title="Tuck to corner (⌘⇧S)">
-            ⤢ tuck
-          </button>
-        </div>
-      </div>
-
+      {active && (
+        <WorkspaceDashboard
+          workspace={workspace}
+          workspaces={workspaces}
+          tabMeta={tabMeta}
+          notes={notes}
+          onOpen={onOpenAttention}
+        />
+      )}
       <div className="grid-body">
         <Group orientation="vertical" className="panel-group-v">
           {rows.map((row, ri) => (
@@ -239,16 +184,19 @@ export default function WorkspaceGrid({ active, workspace, tabMeta, onUpdate, on
                     const flatIndex = ri * COLS + ci;
                     const isDragging = dragSource === flatIndex;
                     const isTarget = dragSource !== null && dragSource !== flatIndex && dragOver === flatIndex;
+                    const attention = (!panel.type || panel.type === "terminal") && panel.tabs.some((tab) => tabMeta[tab.id]?.status === "attention");
+                    const working = (!panel.type || panel.type === "terminal") && panel.tabs.some((tab) => tabMeta[tab.id]?.status === "running");
                     return (
                       <Fragment key={panel.id}>
                         {ci > 0 && <Separator className="resize-handle-v" />}
                         <Panel minSize={10}>
                           <div
-                            className={`panel-container ${isDragging ? "panel-dragging" : ""} ${isTarget ? "panel-drop-target" : ""} ${faded.has(panel.id) ? "panel-faded" : ""}`}
+                            className={`panel-container ${isDragging ? "panel-dragging" : ""} ${isTarget ? "panel-drop-target" : ""} ${faded.has(panel.id) ? "panel-faded" : ""} ${attention ? "panel-wait" : working ? "panel-working" : ""}`}
                             onDoubleClick={(e) => toggleFaded(e, panel.id)}
                             data-panel-index={flatIndex}
                           >
                             <div className="window-frame">
+                              <i className="brk tl" /><i className="brk tr" /><i className="brk bl" /><i className="brk br" />
                               {panel.type === "fieldnotes"
                                 ? <FieldnotesPanel viewId={panel.viewId ?? panel.id} panelIndex={flatIndex} active={active} onReorderStart={startReorder} onClosePanel={() => removePanel(panel.id)} />
                                 : panel.type === "zen"

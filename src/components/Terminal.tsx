@@ -2,11 +2,11 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { getTheme, ThemeId, useTheme } from "../lib/theme";
 import { ITheme, Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import "@xterm/xterm/css/xterm.css";
-import { detectScreenState, notificationState } from "../lib/agents";
+import { detectScreenState, extractApproval, notificationState } from "../lib/agents";
 import { quoteForShell } from "../lib/screenshotDrag";
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
 
 export interface TerminalHandle {
   clear: () => void;
+  focus: () => void;
 }
 
 // Where the pointer was when a file was dragged, in CSS pixels relative to the
@@ -75,10 +76,10 @@ export function releaseTerminal(id: string, host: HTMLElement) {
 // xterm paints its own opaque background, so each app theme gets a palette
 // whose background matches that theme's .terminal-panel exactly.
 const TERMINAL_THEMES: Record<ThemeId, ITheme> = {
-  mosaic: {
-    background: "#0e0a07",
-    foreground: "#F6F0E6",
-    cursor: "#c97d3a",
+    mosaic: {
+    background: "#140e09",
+    foreground: "#EFE6D6",
+    cursor: "#F3E2C4",
     selectionBackground: "#c97d3a40",
     black: "#1e1410",
     brightBlack: "#4a3523",
@@ -147,6 +148,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       // shell, so it works in any folder and keeps whatever you'd typed.
       invoke("pty_write", { id, data: "\x0c" }).catch(console.error);
     },
+    focus: () => termRef.current?.focus(),
   }));
 
   useEffect(() => {
@@ -154,7 +156,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
 
     const term = new XTerm({
       theme: TERMINAL_THEMES[getTheme()],
-      fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", monospace',
+      fontFamily: '"Geist Mono", "JetBrains Mono", ui-monospace, monospace',
       fontSize: 13,
       lineHeight: 1.4,
       cursorBlink: true,
@@ -182,6 +184,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       const size = `${term.cols}x${term.rows}`;
       if (size === lastSize) return;
       lastSize = size;
+      if (!isTauri()) return;
       invoke("pty_resize", { id, cols: term.cols, rows: term.rows })
         // The shell only redraws for the new size once the resize lands.
         .then(() => term.refresh(0, term.rows - 1))
@@ -199,7 +202,9 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     const rows = visible ? term.rows : 32;
     if (!visible) term.resize(cols, rows);
     lastSize = `${cols}x${rows}`;
-    invoke("pty_create", { id, cols, rows, cwd: cwd ?? null }).catch(console.error);
+    // Outside the Tauri shell there is no PTY. The pane still mounts so the
+    // workspace chrome can be used; the real shell only starts in the app.
+    if (isTauri()) invoke("pty_create", { id, cols, rows, cwd: cwd ?? null }).catch(console.error);
 
     // Agents announce "needs approval" / "turn finished" as desktop
     // notifications (OSC 9, or OSC 777;notify). That's a far better signal
@@ -229,15 +234,18 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       for (let row = buffer.baseY; row < buffer.baseY + term.rows; row++) {
         lines.push(buffer.getLine(row)?.translateToString(true) ?? "");
       }
-      const state = detectScreenState(lines.join("\n"));
-      if (state !== lastScreenState) {
-        lastScreenState = state;
-        window.dispatchEvent(new CustomEvent("mosaic-agent-screen", { detail: { id, state } }));
+      const raw = lines.join("\n");
+      const state = detectScreenState(raw);
+      const approval = state === "attention" ? extractApproval(raw) : null;
+      const signature = `${state}|${approval?.prompt ?? ""}|${approval?.approve ?? ""}|${approval?.deny ?? ""}`;
+      if (signature !== lastScreenState) {
+        lastScreenState = signature;
+        window.dispatchEvent(new CustomEvent("mosaic-agent-screen", { detail: { id, state, approval } }));
       }
     };
     const screenInterval = setInterval(publishScreen, 1000);
     term.onData((data) => {
-      invoke("pty_write", { id, data }).catch(console.error);
+      if (isTauri()) invoke("pty_write", { id, data }).catch(console.error);
       window.dispatchEvent(new CustomEvent("mosaic-agent-input", { detail: { id, at: Date.now() } }));
     });
 
@@ -245,14 +253,14 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     let unlisten2: (() => void) | null = null;
     let unlisten3: (() => void) | null = null;
 
-    listen<string>(`pty-data-${id}`, (event) => {
+    if (isTauri()) listen<string>(`pty-data-${id}`, (event) => {
       term.write(event.payload, () => {
         if (screenTimer) clearTimeout(screenTimer);
         screenTimer = setTimeout(publishScreen, 100);
       });
     }).then((fn) => { unlisten1 = fn; });
 
-    listen(`pty-exit-${id}`, () => {
+    if (isTauri()) listen(`pty-exit-${id}`, () => {
       term.write("\r\n\x1b[31m[process exited]\x1b[0m\r\n");
     }).then((fn) => { unlisten2 = fn; });
 
@@ -261,7 +269,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     // event is the only signal we get. It's broadcast to every open terminal,
     // so each one hit-tests the pointer against its own box and only the
     // terminal actually under the cursor reacts.
-    getCurrentWindow().onDragDropEvent((event) => {
+    if (isTauri()) getCurrentWindow().onDragDropEvent((event) => {
       const payload = event.payload;
 
       if (payload.type === "leave") {
@@ -336,7 +344,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       const detail = (event as CustomEvent<{ id: string; paths: string[] }>).detail;
       if (detail.id !== id) return;
       const data = detail.paths.map((path) => `${quoteForShell(path)} `).join("");
-      invoke("pty_write", { id, data }).catch(console.error);
+      if (isTauri()) invoke("pty_write", { id, data }).catch(console.error);
       termRef.current?.focus();
     };
     window.addEventListener("mosaic-insert-screenshot", insert);
@@ -349,7 +357,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     if (cwd && cwd !== prevCwdRef.current) {
       prevCwdRef.current = cwd;
       const escaped = cwd.replace(/'/g, "'\\''");
-      invoke("pty_write", { id, data: `cd '${escaped}'\r` }).catch(console.error);
+      if (isTauri()) invoke("pty_write", { id, data: `cd '${escaped}'\r` }).catch(console.error);
     }
   }, [cwd, id]);
 

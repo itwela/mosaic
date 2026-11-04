@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { AERO_WALLPAPERS, setTheme, setWallpaper, THEMES, useTheme, useWallpaper } from "../lib/theme";
 import "./SettingsView.css";
@@ -27,6 +27,7 @@ export default function SettingsView() {
   const [hooksError, setHooksError] = useState("");
 
   useEffect(() => {
+    if (!isTauri()) { setHooksInstalled(false); return; }
     invoke<boolean>("agent_hooks_installed").then(setHooksInstalled).catch(() => setHooksInstalled(false));
   }, []);
 
@@ -41,10 +42,11 @@ export default function SettingsView() {
   }
 
   useEffect(() => {
+    if (!isTauri()) { setLoading(false); return; }
     isEnabled().then((v) => {
       setLaunchAtLogin(v);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   async function toggleLaunchAtLogin() {

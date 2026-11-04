@@ -30,6 +30,9 @@ function Thumbnail({ shot, size = 160 }: { shot: Shot; size?: number }) {
 export default function ScreenshotBar({ active }: { active: boolean }) {
   const [folder, setFolder] = useState(() => localStorage.getItem("mosaic-screenshot-folder") ?? "");
   const [listing, setListing] = useState<Listing>({ folder: "", files: [] });
+  // Clear all hides shots taken before the click. It does not delete files;
+  // a newer screenshot shows up on the next refresh.
+  const [clearedAt, setClearedAt] = useState(0);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [drag, setDrag] = useState<{ shot: Shot; count: number; x: number; y: number } | null>(null);
@@ -37,6 +40,18 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
   const [preview, setPreview] = useState<{ shot: Shot; x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
   const strip = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClear = () => setClearedAt(Date.now());
+    window.addEventListener("mosaic-clear-shots", onClear);
+    return () => window.removeEventListener("mosaic-clear-shots", onClear);
+  }, []);
+
+  useEffect(() => {
+    setClearedAt(0);
+  }, [folder]);
+
+  const shots = listing.files.filter((shot) => shot.modified > clearedAt);
 
   useEffect(() => {
     const sync = () => setFolder(localStorage.getItem("mosaic-screenshot-folder") ?? "");
@@ -76,11 +91,11 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
   // Drop selections whose files rolled out of the listing; Escape clears.
   useEffect(() => {
     setSelected((cur) => {
-      const present = new Set(listing.files.map((f) => f.path));
+      const present = new Set(shots.map((f) => f.path));
       const next = new Set([...cur].filter((p) => present.has(p)));
       return next.size === cur.size ? cur : next;
     });
-  }, [listing]);
+  }, [listing, clearedAt]);
 
   useEffect(() => {
     if (selected.size === 0) return;
@@ -103,8 +118,8 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
     if (event.button !== 0 || event.shiftKey) return;
     event.preventDefault();
     // dragging part of a multi-selection carries the whole selection
-    const paths = selected.has(shot.path)
-      ? listing.files.filter((f) => selected.has(f.path)).map((f) => f.path)
+      const paths = selected.has(shot.path)
+      ? shots.filter((f) => selected.has(f.path)).map((f) => f.path)
       : [shot.path];
     dragCleanup.current();
     suppressClick.current = false;
@@ -145,15 +160,17 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
     dragCleanup.current = cleanup;
   }
 
-  return <div className="screenshot-bar" aria-label="Recent screenshots">
+  const cleared = clearedAt > 0 && listing.files.length > 0 && shots.length === 0;
+
+  return <div className="screenshot-bar shots" aria-label="Recent screenshots">
     <button className="screenshot-folder" onClick={() => void chooseFolder()} title={`Screenshot folder: ${listing.folder || folder || "(none — pick once)"}\nClick to choose folder`}>▧</button>
     <div className="screenshot-strip" ref={strip} onWheel={(e) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.currentTarget.scrollLeft += e.deltaY; }
     }}>
       {error ? <button className="screenshot-empty" title={error} onClick={() => void chooseFolder()}>Folder unavailable · choose folder</button> : !folder ?
-        <button className="screenshot-empty" onClick={() => void chooseFolder()}>Pick a screenshot folder once</button> : listing.files.length === 0 ?
-        <button className="screenshot-empty" onClick={() => void chooseFolder()}>No screenshots yet · change folder</button> :
-        listing.files.map((shot) => <button key={shot.path} className={`screenshot-thumb ${selected.has(shot.path) ? "screenshot-thumb-selected" : ""}`} aria-label={shot.name} onPointerEnter={(e) => {
+        <button className="screenshot-empty" onClick={() => void chooseFolder()}>Pick a screenshot folder once</button> : shots.length === 0 ?
+        <button className="screenshot-empty" onClick={() => void chooseFolder()}>{cleared ? "Cleared · new shots will show up here" : "No screenshots yet · change folder"}</button> :
+        shots.map((shot) => <button key={shot.path} className={`screenshot-thumb s ${selected.has(shot.path) ? "screenshot-thumb-selected" : ""}`} aria-label={shot.name} onPointerEnter={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           setPreview({ shot, x: r.left + r.width / 2, y: r.bottom + 10 });
         }} onPointerLeave={() => setPreview(null)} onPointerDown={(e) => { setPreview(null); beginDrag(e, shot); }} onClick={(e) => {
@@ -163,7 +180,7 @@ export default function ScreenshotBar({ active }: { active: boolean }) {
           void writeText(shot.path).then(() => setMessage("Path copied")).catch((e) => setError(String(e)));
         }}><Thumbnail shot={shot} /></button>)}
     </div>
-    <span className="screenshot-total" title={message || `${listing.files.length} recent screenshots · newest first`}>{selected.size ? `${selected.size} selected` : `${listing.files.length}/30`}</span>
+    <span className="screenshot-total more" title={message || `${shots.length} recent screenshots · newest first`}>{selected.size ? `${selected.size} selected` : `${shots.length}/30`}</span>
     {preview && !drag && createPortal(<div
       key={preview.shot.path}
       className="screenshot-preview"

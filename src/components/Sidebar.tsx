@@ -215,7 +215,11 @@ export default function Sidebar({
                 dragStartYRef.current = e.clientY;
                 movedRef.current = false;
               }}
-              title={collapsed ? ws.name : undefined}
+              title={collapsed ? ws.name : "Double-click to rename"}
+              onDoubleClick={(e) => {
+                if ((e.target as HTMLElement).closest("button, input")) return;
+                startRename(ws);
+              }}
             >
               {(() => {
                 const metas = ws.panels.filter((p) => p.type !== "launcher").flatMap((p) => p.tabs.map((t) => tabMeta[t.id]));
@@ -298,17 +302,20 @@ export default function Sidebar({
         })}
       </div>
 
+      <div className="sidebar-nav">
       {(() => {
         const metas = Object.values(tabMeta);
         const terminals = metas.filter((m) => m.status === "terminal").length;
         const agents = metas.filter((m) => m.status === "running").length;
         const waiting = metas.filter((m) => m.status === "attention").length;
         return (
-          <div
-            className={`workspace-item workspace-all ${view === "all" ? "workspace-active" : ""}`}
+          <button
+            type="button"
+            className={`commands-nav-btn workspace-all ${view === "all" ? "commands-nav-active" : ""}`}
             onClick={onAllRunning}
-            title={collapsed ? "All running" : "Every running server and agent, in one workspace"}
+            title="Every running server and agent, in one workspace"
           >
+            <span className="sidebar-action-label">All running</span>
             <span className="workspace-counts">
               <span className={`workspace-count ${terminals ? "" : "is-empty"}`} style={countStyle("terminal")} title={`${terminals} running terminal sessions`}>
                 <strong>{terminals}</strong>
@@ -320,9 +327,7 @@ export default function Sidebar({
                 <strong>{waiting}</strong>
               </span>}
             </span>
-            <span className="workspace-short-name" aria-hidden="true">∗</span>
-            <span className="workspace-name">All running</span>
-          </div>
+          </button>
         );
       })()}
 
@@ -331,11 +336,7 @@ export default function Sidebar({
         onClick={onCommands}
         title="Command database"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <ellipse cx="12" cy="5" rx="9" ry="3" />
-          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-          <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
-        </svg>
+        <span className="sidebar-action-icon">⌸</span>
         <span className="sidebar-action-label">Commands</span>
       </button>
 
@@ -344,10 +345,7 @@ export default function Sidebar({
         onClick={onFieldnotes}
         title="Field notes · client checklists"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 4h12l4 4v12H4z" />
-          <path d="M8 12l2.5 2.5L16 9" />
-        </svg>
+        <span className="sidebar-action-icon">☑</span>
         <span className="sidebar-action-label">Field notes</span>
       </button>
 
@@ -367,8 +365,9 @@ export default function Sidebar({
         }}
       />
       <button className="import-workspace-btn" onClick={() => importInputRef.current?.click()}>
-        <span className="sidebar-action-icon">↑</span><span className="sidebar-action-label">Import workspace</span>
+        <span className="sidebar-action-icon">⤓</span><span className="sidebar-action-label">Import workspace</span>
       </button>
+      </div>
 
       <div className="sidebar-footer">
       <button className="settings-btn" onClick={onSettings} title="Settings">

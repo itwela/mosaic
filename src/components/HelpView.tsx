@@ -15,7 +15,7 @@ const concepts = [
   },
   {
     label: "Portable workspaces",
-    desc: "Use the down-arrow beside a workspace to export its layout, terminals, tabs, and launcher shortcuts. Import the .mosaic.json file on another computer to add it there.",
+    desc: "Use the ⋯ menu beside a workspace to export its layout, terminals, tabs, and launcher shortcuts. Import the .mosaic.json or .mosaic.zip file on another computer to add it there.",
   },
   {
     label: "Status dots",
