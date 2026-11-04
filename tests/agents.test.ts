@@ -94,6 +94,13 @@ test("(c) a Codex menu with the question scrolled off sends 1 and 2", () => {
   const offer = extractApproval(rows);
   assert.equal(offer.approve, "1\r");
   assert.equal(offer.deny, "2\r");
+  assert.equal(offer.prompt, "1. Yes, proceed / 2. No, and tell Codex what to do");
+  assert.notEqual(offer.prompt, "Waiting for approval");
+});
+
+test("one permission-shaped row is not a dialog", () => {
+  assert.notEqual(detectScreenState("1. Yes, proceed to chapter two"), "attention");
+  assert.notEqual(detectScreenState("1. No, and tell Claude the migration can wait"), "attention");
 });
 
 test("(d) Claude's three-option menu: Approve is 1, Deny is 3", () => {

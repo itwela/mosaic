@@ -162,21 +162,31 @@ function isNo(label: string): boolean {
   return label.toLowerCase().startsWith("no");
 }
 
-// Permission wording, not any line that happens to start with Yes or No.
-// "Yes, proceed" and "No, and tell Codex…" are a dialog. "Yes we shipped the patch" is not.
-function isPermissionChoice(label: string): boolean {
+function isPermissionYes(label: string): boolean {
   const text = label.toLowerCase();
   return /^yes,\s+(?:proceed|just this once)\b/.test(text)
     || /^yes,?\s+and\s+don'?t\s+ask\s+again\b/.test(text)
-    || /^no,\s+and\s+tell\s+(?:claude|codex)\b/.test(text)
-    || /^no,\s+(?:suggest changes|deny|and block|continue without)\b/.test(text)
     || /^allow\s+(?:once|for this session|tool for this session|all server tools)\b/.test(text);
 }
 
+function isPermissionNo(label: string): boolean {
+  const text = label.toLowerCase();
+  return /^no,\s+and\s+tell\s+(?:claude|codex)\b/.test(text)
+    || /^no,\s+(?:suggest changes|deny|and block|continue without)\b/.test(text);
+}
+
+// Both shapes, at the bottom. One permission-shaped line is not a menu.
 function permissionRowsAtEnd(flat: string): boolean {
   const choices = parseChoices(flat);
-  if (!choices.some((choice) => isPermissionChoice(choice.label))) return false;
+  if (!choices.some((choice) => isPermissionYes(choice.label))) return false;
+  if (!choices.some((choice) => isPermissionNo(choice.label))) return false;
   return flat.trimEnd().endsWith(choices[choices.length - 1].label);
+}
+
+function visibleOptionTitle(flat: string): string | null {
+  const choices = parseChoices(flat);
+  if (!permissionRowsAtEnd(flat.toLowerCase())) return null;
+  return choices.map((choice) => `${choice.n}. ${choice.label}`).join(" / ");
 }
 
 // The text after a permission header is its option rows, and nothing else.
@@ -329,7 +339,7 @@ export function extractApproval(screen: string): ApprovalOffer {
   // Codex sentences with no numbered rows (the upload line) are y / n.
   // An Allow / "do you want" header waits until its Yes and No rows are visible.
   const codexYn = !yes && !no && /upload to vercel blob and replace\b|would you like to\b/.test(lower);
-  const prompt = (fullQuestion(flat) || DEFAULT_APPROVAL.prompt).slice(0, 220);
+  const prompt = (fullQuestion(flat) || visibleOptionTitle(flat) || DEFAULT_APPROVAL.prompt).slice(0, 220);
   const approve = yes ? `${yes.n}\r` : codexYn ? "y\r" : null;
   const deny = no ? `${no.n}\r` : codexYn ? "n\r" : null;
   return { prompt, approve, deny, key: `${prompt}|${approve ?? ""}|${deny ?? ""}` };
