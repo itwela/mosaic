@@ -263,6 +263,16 @@ function draw(items) {
         <span>${labels[x.status] || 'To do'}</span>
       </button>
       ${x.notes ? `<button type="button" class="note-preview" data-note="${esc(x.id)}" aria-label="Edit note for ${esc(x.title)}" title="Click to edit note">${esc(x.notes)}</button>` : ''}
+      ${x.files?.length ? `
+        <div class="item-files">
+          ${x.files.map((f, n) => `
+            <button type="button" class="file-chip" data-file="${esc(x.id)}" data-file-index="${n}" title="Open ${esc(f.name)}">
+              <span class="file-ext">${esc(fileExtension(f).toUpperCase() || 'FILE')}</span>
+              <span class="file-name">${esc(f.name)}</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
       ${x.attachments?.length ? `
         <div class="attachments">
           ${x.attachments.map(a => `
@@ -368,6 +378,15 @@ function draw(items) {
     };
   });
 
+  // Wire attached files
+  document.querySelectorAll('.file-chip').forEach(el => {
+    el.onclick = () => {
+      const item = allItems().find(x => x.id === el.dataset.file);
+      const file = item?.files?.[Number(el.dataset.fileIndex)];
+      if (file) openFile(file);
+    };
+  });
+
   // Wire evidence trigger
   document.querySelectorAll('.evidence-trigger').forEach(el => {
     el.onclick = () => {
@@ -416,6 +435,111 @@ document.querySelector('#image-viewer').onclick = event => event.currentTarget.c
 
 function esc(s = '') {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+// Attached files: a task definition may list `files: [{ name, src }]`, where `src` is
+// relative to this folder (e.g. files/veh/write-up.md). Markdown is rendered, text and
+// data files shown as-is, images and PDFs displayed inline.
+const TEXT_FILES = ['txt', 'log', 'json', 'csv', 'yml', 'yaml', 'xml', 'html', 'js', 'ts', 'css', 'sql'];
+const IMAGE_FILES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+
+function fileExtension(file) {
+  const match = /\.([a-z0-9]+)$/i.exec(file.src || file.name || '');
+  return match ? match[1].toLowerCase() : '';
+}
+
+async function openFile(file) {
+  const dialog = document.querySelector('#file-viewer');
+  const body = document.querySelector('#file-body');
+  const ext = fileExtension(file);
+  document.querySelector('#file-title').textContent = file.name;
+  body.className = 'file-body';
+  body.innerHTML = '<p class="file-status">Loading…</p>';
+  dialog.showModal();
+  try {
+    if (IMAGE_FILES.includes(ext)) {
+      body.innerHTML = `<img class="file-image" src="${esc(file.src)}" alt="${esc(file.name)}">`;
+      return;
+    }
+    if (ext === 'pdf') {
+      body.classList.add('file-body-frame');
+      body.innerHTML = `<iframe class="file-frame" src="${esc(file.src)}" title="${esc(file.name)}"></iframe>`;
+      return;
+    }
+    const response = await fetch(file.src, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    if (ext === 'md' || ext === 'markdown') {
+      body.classList.add('markdown');
+      body.innerHTML = renderMarkdown(text);
+    } else if (TEXT_FILES.includes(ext)) {
+      body.innerHTML = `<pre class="file-text">${esc(text)}</pre>`;
+    } else {
+      body.innerHTML = `<p class="file-status">This file type can't be previewed here.</p>`;
+    }
+  } catch (error) {
+    body.innerHTML = `<p class="file-status">Could not open ${esc(file.name)} (${esc(error.message)}). Check that ${esc(file.src)} exists in the fieldnotes folder.</p>`;
+  }
+}
+
+// A small Markdown renderer for write-ups: headings, paragraphs, lists, tables,
+// fenced code, rules, and inline code/bold/italic/links. Input is escaped first.
+function renderMarkdown(source) {
+  const inline = text => esc(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const cells = row => row.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const lines = source.replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    if (line.startsWith('```')) {
+      const code = [];
+      for (i++; i < lines.length && !lines[i].startsWith('```'); i++) code.push(lines[i]);
+      i++;
+      out.push(`<pre><code>${esc(code.join('\n'))}</code></pre>`);
+      continue;
+    }
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+    if (heading) {
+      const level = heading[1].length;
+      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+    if (/^(-{3,}|\*{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+    if (line.trim().startsWith('|') && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1] || '')) {
+      const head = cells(line);
+      const rows = [];
+      for (i += 2; i < lines.length && lines[i].trim().startsWith('|'); i++) rows.push(cells(lines[i]));
+      out.push(`<div class="md-table"><table><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${
+        rows.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    const listItem = /^\s*([-*]|\d+\.)\s+(.*)$/;
+    if (listItem.test(line)) {
+      const ordered = /^\s*\d+\./.test(line);
+      const items = [];
+      while (i < lines.length && (listItem.test(lines[i]) || (/^\s{2,}\S/.test(lines[i]) && items.length))) {
+        const match = listItem.exec(lines[i]);
+        if (match) items.push(match[2]);
+        else items[items.length - 1] += ` ${lines[i].trim()}`;
+        i++;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      out.push(`<${tag}>${items.map(t => `<li>${inline(t)}</li>`).join('')}</${tag}>`);
+      continue;
+    }
+    const para = [];
+    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|\s*([-*]|\d+\.)\s|\s*\|)/.test(lines[i])) para.push(lines[i++].trim());
+    if (!para.length) para.push(lines[i++].trim());
+    out.push(`<p>${inline(para.join(' '))}</p>`);
+  }
+  return out.join('\n');
 }
 
 // Client switching

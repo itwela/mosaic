@@ -289,3 +289,15 @@
   :root[data-theme="aero"] .masthead h1 { font-size: 24px; }
   :root[data-theme="aero"] .list-heading h2 { font-size: 18px; }
 }
+
+/* attached files on light glass */
+:root[data-theme="aero"] .file-body { color: var(--ink); }
+:root[data-theme="aero"] .file-chip { background: rgba(255, 255, 255, 0.7); border-color: rgba(20, 90, 160, 0.35); }
+:root[data-theme="aero"] .file-text,
+:root[data-theme="aero"] .markdown pre,
+:root[data-theme="aero"] .markdown th { background: rgba(20, 90, 160, 0.06); }
+:root[data-theme="aero"] .markdown code { background: rgba(20, 90, 160, 0.08); }
+:root[data-theme="aero"] .markdown th,
+:root[data-theme="aero"] .markdown td,
+:root[data-theme="aero"] .file-text,
+:root[data-theme="aero"] .markdown pre { border-color: rgba(20, 90, 160, 0.2); }

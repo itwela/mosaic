@@ -26,3 +26,4 @@ dist-ssr
 # Personal Fieldnotes client data stays on this computer
 public/fieldnotes/my-clients.js
 public/fieldnotes/workstreams-data.js
+public/fieldnotes/files/
