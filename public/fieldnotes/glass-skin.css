@@ -1,0 +1,375 @@
+/* Lit glass skin for Field notes (the Mosaic theme). Loaded after mosaic-skin.css and
+   scoped away from Frutiger Aero. The page sits on the app's frosted pane, so everything
+   here is glass tiles, lead hairlines and tile meters; nothing has its own solid ground. */
+
+@font-face { font-family: "Fraunces Soft"; src: url("/fonts/FrauncesSoft-SemiBold.ttf") format("truetype"); font-weight: 600; }
+@font-face { font-family: "DM Sans"; src: url("/fonts/DMSans.ttf") format("truetype"); font-weight: 100 1000; }
+@font-face { font-family: "JetBrains Mono"; src: url("/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; }
+
+:root:not([data-theme="aero"]) {
+  --cream: #f4eee4; --dim-text: #c4baab; --mute: #8e8475; --faint: #5e564c;
+  --working: #f5b041; --needs: #f0564e; --done: #58cdb4;
+  --tile-fill: rgba(255, 255, 255, 0.07); --tile-stroke: rgba(255, 255, 255, 0.16); --hair: rgba(255, 255, 255, 0.08);
+  --display: "Fraunces Soft", Georgia, serif; --sans: "DM Sans", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  --tile-row: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='12'%3E%3Cpath d='M.8 1.1 9.6.3l.2 10.9-9.4.5zM13.5.4l9 .9-.6 10.3-8.7-.5zM26.4 1.2l9.2-.9.3 11.2-9-.4zM39.6.3l9.3.8-.5 10.6-9.2.1z'/%3E%3C/svg%3E");
+  --cut: polygon(8% 4%, 94% 10%, 100% 92%, 2% 98%);
+  --ink: var(--cream); --muted: var(--dim-text); --dim: var(--mute); --line: var(--hair);
+  font-family: var(--sans);
+  color: var(--cream);
+
+  body { padding: 23px 27px 18px; font-family: var(--sans); }
+  .shell { max-width: none; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .top-shell { position: static; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+
+  /* masthead */
+  .masthead { height: 46px; padding: 0 0 13px; border-bottom: 0; align-items: center; }
+  .eyebrow { font: 600 10px var(--sans); letter-spacing: 1.4px; color: var(--mute); }
+  .masthead .eyebrow, .mark, .h1-app { display: none; }
+  .h1-client { display: inline; }
+  .masthead h1 { margin: 0; font: 600 30px/46px var(--display); letter-spacing: -0.36px; color: var(--cream); white-space: nowrap; }
+  .client-select { min-width: 230px; }
+  .header-right { gap: 8px; }
+  .client-label { display: none; }
+  .client-select,
+  .client-menu-button {
+    height: 32px;
+    padding: 0 30px 0 12px;
+    border: 1px solid var(--tile-stroke);
+    border-radius: 4px;
+    background: var(--tile-fill);
+    font: 500 13px var(--sans);
+    color: var(--cream);
+  }
+  .client-select:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+  .client-select:focus-visible, .search input:focus-visible { outline: 0; border-color: rgba(244, 238, 228, 0.6); }
+  .client-select-arrow { color: var(--mute); }
+  .client-add-btn {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 4px;
+    background: none;
+    font: 500 13px var(--sans);
+    color: var(--dim-text);
+  }
+  .client-add-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--tile-stroke); color: #fff; }
+  .save-state { margin-left: 14px; font: 400 12px var(--sans); color: var(--dim-text); }
+  .save-dot { width: 12px; height: 12px; border-radius: 0; background: url("/textures/chips/sea-lit-0.png") center / cover; clip-path: var(--cut); box-shadow: none; }
+
+  /* lists: one glass tile each, with its own row of tiles for progress */
+  .tabs { gap: 10px; padding: 0 0 14px; }
+  .tab,
+  .tab.active,
+  .tab[data-complete="true"],
+  .tab[data-complete="true"]:not(.active),
+  .tab[data-complete="true"].active {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 250px;
+    height: 50px;
+    padding: 9px 13px 0;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+    font: 400 13.5px var(--sans);
+    color: var(--dim-text);
+    filter: none;
+  }
+  .tab:hover { background: rgba(255, 255, 255, 0.07); color: var(--cream); }
+  .tab.active,
+  .tab[data-complete="true"].active { border-color: rgba(255, 255, 255, 0.34); background: rgba(255, 255, 255, 0.14); color: var(--cream); font-weight: 600; }
+  .tab-badge,
+  .tab-badge[data-state],
+  .tab.active .tab-badge[data-state="idle"] { padding: 0; border: 0 !important; border-radius: 0; background: none !important; font: 500 12px var(--mono); color: inherit !important; }
+  .tab::before,
+  .tab-progress-bar {
+    content: "";
+    position: absolute;
+    left: 13px;
+    bottom: 9px;
+    height: 8px;
+    -webkit-mask: var(--tile-row) 0 0 / 35px 8px repeat-x;
+    mask: var(--tile-row) 0 0 / 35px 8px repeat-x;
+  }
+  .tab { --chip: url("/textures/chips/ruby-lit-0.png"); --chip-off: url("/textures/chips/ruby-unlit-0.png"); }
+  .tab:nth-child(4n + 2) { --chip: url("/textures/chips/amber-lit-0.png"); --chip-off: url("/textures/chips/amber-unlit-0.png"); }
+  .tab:nth-child(4n + 3) { --chip: url("/textures/chips/cobalt-lit-0.png"); --chip-off: url("/textures/chips/cobalt-unlit-0.png"); }
+  .tab:nth-child(4n + 4) { --chip: url("/textures/chips/teal-lit-0.png"); --chip-off: url("/textures/chips/teal-unlit-0.png"); }
+  .tab::before { right: 13px; background: linear-gradient(rgba(9, 7, 6, 0.5), rgba(9, 7, 6, 0.5)), var(--chip-off) 0 0 / 30px 30px; }
+  .tab-progress-bar,
+  .tab[data-complete="true"] .tab-progress-bar {
+    width: round(up, calc((100% - 26px) * var(--pct) / 100), 8.75px) !important;
+    max-width: calc(100% - 26px);
+    border-radius: 0;
+    background: var(--chip) 0 0 / 30px 30px !important;
+    box-shadow: none !important;
+    opacity: 1;
+  }
+
+  /* toolbar */
+  .toolbar { gap: 8px; margin: 0 0 12px; }
+  .tabs { padding-bottom: 16px; }
+  .search span { top: 5px; color: var(--mute); }
+  .search input { height: 34px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 3px; background: rgba(0, 0, 0, 0.3); font: 400 12.5px var(--sans); color: var(--cream); }
+  .search input::placeholder { color: var(--mute); }
+  .filter-cycle,
+  .button,
+  .zoom-controls {
+    height: 34px;
+    border: 1px solid var(--tile-stroke);
+    border-radius: 4px;
+    background: var(--tile-fill);
+    font: 500 13px var(--sans);
+    color: var(--cream);
+    box-shadow: none;
+  }
+  .filter-cycle:hover,
+  .button:hover { background: rgba(255, 255, 255, 0.13); border-color: rgba(255, 255, 255, 0.3); }
+  .zoom-button, .zoom-level { font-family: var(--mono); color: var(--cream); }
+  .zoom-level { font-size: 12px; color: var(--dim-text); }
+  .button.primary { border: 0; background: url("/textures/chips/opal-lit-1.png") center / 220px; color: #15110d; font-weight: 600; }
+
+  /* summary: one tile per step of progress */
+  .summary { height: auto; margin: 4px 0 0; }
+  .summary-line { flex-direction: column; align-items: stretch; gap: 8px; }
+  .summary-stats { gap: 20px; font: 400 13px var(--sans); color: var(--dim-text); }
+  .summary-stats strong { margin-right: 8px; font: 600 18.7px var(--display); color: var(--cream); }
+  .summary-stats span:nth-child(2) strong { color: var(--working); }
+  .attention strong { color: var(--needs); }
+  .summary-line { position: relative; }
+  .summary-line::after { content: "one tile per item"; position: absolute; right: 0; top: 4px; font: 400 11px var(--sans); color: var(--mute); }
+  .progress { display: none; }
+  .progress-tiles { display: flex; gap: 2.2px; height: 14px; margin-top: 3px; }
+  .progress-tiles i, .group-tiles i { flex: 1 1 0; min-width: 0; background: linear-gradient(rgba(9, 7, 6, 0.5), rgba(9, 7, 6, 0.5)), url("/textures/chips/sea-unlit-0.png") center / 40px; clip-path: polygon(8% 4%, 94% 10%, 100% 92%, 2% 98%); }
+  .progress-tiles i:nth-child(2n), .group-tiles i:nth-child(2n) { clip-path: polygon(2% 10%, 98% 2%, 92% 96%, 8% 90%); }
+  .progress-tiles i:nth-child(3n), .group-tiles i:nth-child(3n) { clip-path: polygon(6% 2%, 100% 8%, 94% 100%, 0 92%); }
+  .progress-tiles i[data-s="done"], .group-tiles i[data-s="done"] { background: url("/textures/chips/sea-lit-0.png") center / 40px; }
+  .progress-tiles i[data-s="in-progress"], .group-tiles i[data-s="in-progress"] { background: url("/textures/chips/amber-lit-0.png") center / 40px; }
+  .progress-tiles i[data-s="blocked"], .group-tiles i[data-s="blocked"] { background: url("/textures/chips/ruby-lit-0.png") center / 40px; }
+  .group-tiles { display: flex; flex: none; gap: 3px; height: 12px; margin-left: auto; }
+  .group-tiles i { flex: 0 0 11px; }
+  .progress-x,
+  .progress-x i { height: 12px; border-radius: 0; -webkit-mask: var(--tile-row) 0 0 / 52px 12px repeat-x; mask: var(--tile-row) 0 0 / 52px 12px repeat-x; }
+  .progress { flex: none; background: linear-gradient(rgba(9, 7, 6, 0.5), rgba(9, 7, 6, 0.5)), url("/textures/chips/sea-unlit-0.png") 0 0 / 40px 40px; }
+  .progress i { width: round(up, calc(var(--pct) * 1%), 13px) !important; background: url("/textures/chips/sea-lit-0.png") 0 0 / 40px 40px; }
+
+  /* list heading */
+  .list-heading { height: auto; margin: 22px 0 16px; align-items: center; }
+  .list-heading .eyebrow { display: none; }
+  .list-heading h2 { margin: 0; font: 600 22px/1.2 var(--display); letter-spacing: -0.26px; color: var(--cream); }
+  .add-task-btn { height: 30px; padding: 0 12px; border: 1px solid var(--tile-stroke); border-radius: 4px; background: var(--tile-fill); font: 500 13px var(--sans); color: var(--cream); }
+  .count { font: 400 12.5px var(--sans); color: var(--dim-text); }
+
+  /* workstreams */
+  .list { margin: 0; padding: 0; }
+  .workstream,
+  .workstream[data-complete="true"] { margin: 0 0 8px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 4px; background: rgba(255, 255, 255, 0.03); box-shadow: none; }
+  .workstream[data-complete="true"] { border-color: rgba(88, 205, 180, 0.34); }
+  .workstream > summary,
+  .workstream[data-complete="true"] > summary { position: relative; height: 50px; gap: 16px; padding: 0 16px; background: none; }
+  .workstream > summary:hover { filter: none; background: rgba(255, 255, 255, 0.04); }
+  .group-number, .workstream[data-complete="true"] .group-number { width: 22px; font: 400 12px var(--mono); color: var(--mute); }
+  .group-title, .workstream[data-complete="true"] .group-title { font: 600 15px var(--sans); letter-spacing: 0; color: var(--cream); }
+  .group-progress,
+  .group-progress[data-state] { min-width: 64px; margin-left: 0; justify-content: flex-end; text-align: right; padding: 0; border: 0 !important; border-radius: 0; background: none !important; font: 500 12.5px var(--mono); color: var(--cream) !important; }
+  .group-progress[data-state="done"] { color: var(--done) !important; }
+  .group-progress-bar, .workstream[data-complete="true"] .group-progress-bar { display: none; }
+  .group-chevron { color: var(--dim-text); }
+  .group-progress-bar,
+  .workstream[data-complete="true"] .group-progress-bar {
+    left: auto;
+    right: 108px;
+    top: 19px;
+    bottom: auto;
+    height: 12px;
+    width: round(up, calc(var(--pct) * 1.69px), 13px) !important;
+    transform-origin: right;
+    border-radius: 0;
+    background: url("/textures/chips/sea-lit-0.png") 0 0 / 40px 40px;
+    box-shadow: none;
+    -webkit-mask: var(--tile-row) 100% 0 / 52px 12px repeat-x;
+    mask: var(--tile-row) 100% 0 / 52px 12px repeat-x;
+  }
+  .group-items { border-top: 1px solid var(--hair); padding: 8px 46px 12px 54px; columns: 2 420px; column-gap: 40px; }
+  .group-items { display: block; background: none; }
+  .item, .item:last-child { break-inside: avoid; border: 0 !important; border-radius: 0; background: none; box-shadow: none; padding-left: 0; }
+  .note-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 0 4px; }
+
+  /* items: the status is a tile you click */
+  .item { grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; min-height: 28px; padding: 3px 0; border-bottom: 0; }
+  .number { display: none; }
+  .status-button,
+  .status-button[data-state] {
+    grid-column: 1;
+    grid-row: 1;
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    border: 1px solid var(--mute);
+    border-radius: 2px;
+    background: none;
+    font-size: 0;
+    overflow: hidden;
+  }
+  .status-button:hover { border-color: var(--cream); background: rgba(255, 255, 255, 0.1); }
+  .status-icon { display: none; }
+  .status-button[data-state="done"],
+  .status-button[data-state="in-progress"],
+  .status-button[data-state="blocked"] { border: 0; border-radius: 0; clip-path: var(--cut); background: url("/textures/chips/sea-lit-0.png") center / cover; }
+  .status-button[data-state="in-progress"] { background-image: url("/textures/chips/amber-lit-0.png"); }
+  .status-button[data-state="blocked"] { background-image: url("/textures/chips/ruby-lit-0.png"); }
+  .item-main { grid-column: 2; gap: 8px; }
+  .item-title { flex: 0 1 auto; font: 400 13px/1.4 var(--sans); color: var(--cream); }
+  .item[data-status="done"] .item-title { color: var(--mute); }
+  .item[data-status="done"] .item-title::after { content: none; }
+  .item[data-status="in-progress"] .item-main::after { content: "active"; margin-left: auto; font: 500 11px var(--mono); color: var(--working); }
+  .item[data-status="blocked"] .item-main::after { content: "blocked"; margin-left: auto; font: 500 11px var(--mono); color: var(--needs); }
+  .detail-trigger, .note-trigger, .evidence-trigger { font: 400 11px var(--sans); color: var(--mute); opacity: 0; transition: opacity 0.15s; }
+  .item:hover .detail-trigger, .item:hover .note-trigger, .item:hover .evidence-trigger,
+  .item[data-has-note] .note-trigger, .item[data-has-evidence] .evidence-trigger { opacity: 1; }
+  .detail-trigger:hover, .note-trigger:hover, .evidence-trigger:hover { color: var(--cream); background: rgba(255, 255, 255, 0.08); }
+  .priority { font: 500 10.5px var(--mono); color: var(--working); }
+  .note-preview { grid-column: 2 / 4; font: 400 12px var(--sans); color: var(--dim-text); }
+  .empty, footer { font: 400 12px var(--sans); color: var(--mute); }
+
+  /* dialogs and menus: a sheet of glass in lead */
+  .note-dialog, .detail-dialog, .file-menu-panel, .client-menu-panel {
+    border: 4px solid #0b0a09;
+    border-radius: 7px;
+    background: #16110e;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 24px 60px rgba(0, 0, 0, 0.7);
+    color: var(--cream);
+  }
+  .dialog-head strong { font: 600 18.7px var(--display); }
+  .text-input, .note-dialog textarea { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 3px; background: rgba(0, 0, 0, 0.3); font-family: var(--sans); color: var(--cream); }
+  .file-menu-item { font: 400 13px var(--sans); color: var(--dim-text); border-radius: 3px; }
+  .file-menu-item:hover { background: rgba(255, 255, 255, 0.12); color: var(--cream); }
+  .file-menu-label { font: 600 10px var(--sans); letter-spacing: 1.4px; color: var(--mute); }
+}
+
+/* as a pane in a workspace: the pane head already says "Field notes", so start at the client */
+:root.in-pane:not([data-theme="aero"]) {
+  body { padding: 14px 16px 12px; }
+  .shell { padding: 0; background: none; }
+  .top-shell { margin: 0; padding: 0; }
+  .brand { display: none; }
+  .masthead { padding: 0 0 12px; }
+  .header-right { flex: 1; flex-wrap: nowrap; }
+  .client-control { flex: 1; }
+  .client-select, .client-add-btn { height: 28px; font-size: 12.5px; }
+  .save-state { font-size: 0; margin-left: 4px; }
+  .tabs { gap: 6px; padding-bottom: 10px; }
+  .tab, .tab.active, .tab[data-complete="true"], .tab[data-complete="true"]:not(.active), .tab[data-complete="true"].active { min-width: 150px; height: 44px; padding: 7px 10px 0; font-size: 12.5px; }
+  .tab::before, .tab-progress-bar { left: 10px; bottom: 7px; }
+  .tab::before { right: 10px; }
+  .tab-progress-bar, .tab[data-complete="true"] .tab-progress-bar { width: round(up, calc((100% - 20px) * var(--pct) / 100), 8.75px) !important; max-width: calc(100% - 20px); }
+  .toolbar { margin-bottom: 10px; }
+  .search input, .filter-cycle, .button, .zoom-controls { height: 28px; font-size: 12px; }
+  .zoom-button, .zoom-level { height: 26px; }
+  .summary { margin-bottom: 12px; }
+  .list-heading h2 { font-size: 18.7px; }
+  .list { margin: 0; padding: 0; }
+  .workstream > summary, .workstream[data-complete="true"] > summary { height: 40px; padding: 0 12px; gap: 12px; }
+  .group-title, .workstream[data-complete="true"] .group-title { font-size: 13.5px; }
+  .group-progress-bar, .workstream[data-complete="true"] .group-progress-bar { top: 14px; right: 92px; width: round(up, calc(var(--pct) * 1.04px), 13px) !important; }
+  .group-items { padding-left: 46px; columns: auto; }
+  .summary-line::after { content: none; }
+  .group-tiles i { flex-basis: 8px; }
+  .group-tiles { gap: 2px; }
+  .masthead { height: auto; }
+  .client-select { min-width: 0; }
+}
+
+/* Compact Field notes: reference 44. Keep tools available in a disclosure. */
+@media (max-width: 620px) {
+ :root:not([data-theme="aero"]) {
+  body { padding: 12px; }
+  .brand, .save-state { display: none; }
+  .masthead { height: auto; padding-bottom: 10px; }
+  .header-right, .client-control, .client-select-wrap { width: 100%; min-width: 0; }
+  .client-select { width: 100%; min-width: 0; }
+  .client-add-btn { display: none; }
+  .tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 14px; }
+  .tab, .tab.active, .tab[data-complete="true"], .tab[data-complete="true"]:not(.active), .tab[data-complete="true"].active { flex: 0 0 142px; min-width: 142px; height: 46px; font-size: 13px; padding: 7px 10px 0; }
+  .tab-badge { position: absolute; bottom: 6px; right: 8px; font-size: 11px; }
+  .tab::before { right: 50px; }
+  .tab-progress-bar, .tab[data-complete="true"] .tab-progress-bar { max-width: calc(100% - 60px); }
+  .toolbar { flex-wrap: wrap; }
+  .summary-line::after { content: none; }
+  .summary-stats { gap: 12px; font-size: 12px; white-space: nowrap; }
+  .summary-stats strong { font-size: 16px; margin-right: 5px; }
+  .progress-tiles { flex-wrap: wrap; height: auto; gap: 3px 2px; margin-top: 6px; }
+  .progress-tiles i { flex: 0 0 calc((100% - 86px) / 44); height: 9px; }
+  .list-heading { margin: 14px 0 10px; }
+  .list-heading h2 { font-size: 16px; }
+  .workstream > summary, .workstream[data-complete="true"] > summary { display: grid; grid-template-columns: 1fr auto; height: 74px; padding: 9px 11px; gap: 5px; }
+  .group-number { grid-row: 1; grid-column: 1; }
+  .group-progress { grid-row: 1; grid-column: 2; }
+  .group-title, .workstream[data-complete="true"] .group-title { grid-row: 2; grid-column: 1 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .group-tiles { grid-row: 3; grid-column: 1 / -1; margin: 0; gap: 4px; height: 9px; max-width: 100%; overflow: hidden; }
+  .group-tiles i { flex-basis: 9px; }
+  .group-chevron { display: none; }
+  .group-items { padding: 8px 12px; columns: auto; }
+  .detail-trigger, .note-trigger, .evidence-trigger { opacity: 1; }
+ }
+}
+
+@media(max-width:620px) {
+ :root:not([data-theme="aero"]):not(.in-pane) {
+  .toolbar, .list-heading, footer { display: none; }
+  .summary { margin-bottom: 20px; }
+  &.show-tools .toolbar { display: flex; }
+  &.show-tools .list-heading { display: flex; }
+  &.show-tools .client-add-btn { display: block; }
+ }
+}
+
+:root:not([data-theme="aero"]), :root.in-pane:not([data-theme="aero"]) {
+ .tab, .tab.active, .tab[data-complete="true"], .tab[data-complete="true"]:not(.active), .tab[data-complete="true"].active {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: 20px 12px;
+  column-gap: 10px; row-gap: 5px; flex-shrink: 0; min-width: 174px; height: 58px; padding: 8px 10px;
+ }
+ .tab-label { grid-column: 1 / -1; grid-row: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .tab-badge, .tab-badge[data-state] { position: static; grid-column: 2; grid-row: 2; line-height: 12px; justify-self: end; font-size: 11px; white-space: nowrap; }
+ .tab::before, .tab-progress-bar, .tab[data-complete="true"] .tab-progress-bar {
+  grid-column: 1; grid-row: 2; position: relative; inset: auto; align-self: center; height: 8px; max-width: 100%; margin: 0;
+ }
+ .tab::before { width: 100%; }
+ .tab-progress-bar, .tab[data-complete="true"] .tab-progress-bar { width: calc(var(--pct) * 1%) !important; }
+ .summary-stats { flex-wrap: wrap; row-gap: 6px; }
+ .toolbar { flex-wrap: wrap; }
+ .search { min-width: 0; flex: 1 1 160px; }
+ .list-heading { gap: 10px; flex-wrap: wrap; }
+ .heading-actions { flex-wrap: wrap; }
+}
+
+
+/* Keep progress in its own grid track, including embedded panes and long lists.
+   Fixed-width flex children previously escaped their track and painted over counts. */
+:root:not([data-theme="aero"]), :root.in-pane:not([data-theme="aero"]) {
+ .workstream > summary, .workstream[data-complete="true"] > summary {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(0, 240px) 64px 8px;
+  gap: 12px; height: auto; min-height: 50px; padding: 12px 16px;
+ }
+ .group-number, .group-title, .group-progress, .group-chevron, .group-tiles { grid-row: 1; }
+ .group-number { grid-column: 1; }
+ .group-title, .workstream[data-complete="true"] .group-title { grid-row: 1; grid-column: 2; overflow-wrap: anywhere; }
+ .group-tiles { grid-column: 3; min-width: 0; max-width: 100%; overflow: hidden; margin: 0; justify-content: flex-end; }
+ .group-tiles i { flex: 0 1 11px; min-width: 0; }
+ .group-progress { grid-column: 4; white-space: nowrap; }
+ .group-chevron { grid-column: 5; }
+}
+@media (max-width: 900px) {
+ :root:not([data-theme="aero"]), :root.in-pane:not([data-theme="aero"]) {
+  .workstream > summary, .workstream[data-complete="true"] > summary {
+   grid-template-columns: 22px minmax(0, 1fr) 64px 8px; gap: 8px 10px;
+  }
+  .group-progress { grid-column: 3; }
+  .group-chevron { grid-column: 4; }
+  .group-tiles { grid-row: 2; grid-column: 2 / -1; height: 10px; justify-content: flex-start; }
+  .group-title, .workstream[data-complete="true"] .group-title { white-space: normal; }
+ }
+}

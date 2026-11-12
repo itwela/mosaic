@@ -7,11 +7,16 @@ import {
   HEAT_LABELS,
   HeatLevel,
   incrementCopy,
+  recordCommand,
   removeCommand,
   setCategory,
   useCommandDb,
 } from "../store/commands";
+import Icon from "./Icon";
 import "./CommandsView.css";
+
+// The glass each heat level is cut from in the Mosaic theme.
+const HEAT_GLASS: Record<HeatLevel, string> = { cold: "cobalt", cool: "teal", warm: "amber", hot: "ember", hotter: "ruby" };
 
 // How much light comes through a card's glass: used commands glow, cold ones stay dim.
 const GLASS_DIM: Record<HeatLevel, number> = { cold: 0.55, cool: 0.4, warm: 0.22, hot: 0.08, hotter: 0 };
@@ -51,8 +56,27 @@ function categoryColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? "#5c6b7a";
 }
 
-export default function CommandsView() {
+interface Props {
+  /** When set, renders as the in-terminal toolbox: close button + quick-add form. */
+  onClose?: () => void;
+  /** Full page only: the tuck button in the page's title bar. */
+  onToggleScreenshot?: () => void;
+}
+
+export default function CommandsView({ onClose, onToggleScreenshot }: Props = {}) {
   const db = useCommandDb();
+  const [showAdd, setShowAdd] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newText, setNewText] = useState("");
+
+  function submitAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newText.trim()) return;
+    recordCommand(newText, newLabel);
+    setNewLabel("");
+    setNewText("");
+  }
   const [search, setSearch] = useState("");
   const [category, setCategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortMode>("hot");
@@ -95,7 +119,22 @@ export default function CommandsView() {
   }
 
   return (
-    <div className="commands-view">
+    <div className={`commands-view${showAdd ? " show-add" : ""}${showOptions ? " show-options" : ""}${onClose ? " commands-view-modal" : ""}`}>
+      {!onClose && (
+        <header className="page-bar" data-tauri-drag-region>
+          <h1 className="page-bar-title">Commands</h1>
+          <span className="page-bar-sub">{db.length} saved</span>
+          <button className="grid-add-launcher compact-only" title="Sort commands" onClick={() => setShowOptions(v => !v)}>···</button>
+          <button className="grid-add-panel compact-only" title="Save a command" onClick={() => setShowAdd(v => !v)}><Icon name="plus" /></button>
+          {onToggleScreenshot && (
+            <div className="grid-toolbar-actions">
+              <button className="grid-tuck-btn" onClick={onToggleScreenshot} title="Tuck to corner (⌘⇧S)">
+                <Icon name="tuck" />tuck
+              </button>
+            </div>
+          )}
+        </header>
+      )}
       <div className="commands-card">
         <div className="commands-header">
           <div>
@@ -103,19 +142,41 @@ export default function CommandsView() {
             <h1 className="commands-title">Every command, in one place</h1>
             <p className="commands-sub">
               {db.length} command{db.length === 1 ? "" : "s"} saved across your terminals.
-              Hotter commands get used more — the color tells you at a glance.
+              {" "}<span className="commands-sub-plain">Hotter commands get used more — the color tells you at a glance.</span>
+              <span className="commands-sub-glass">The hotter the glass, the more you use it.</span>
             </p>
           </div>
           <div className="commands-heat-legend">
             <span>cold</span>
-            <i className="heat-swatch" style={{ background: HEAT_COLORS.cold }} />
-            <i className="heat-swatch" style={{ background: HEAT_COLORS.cool }} />
-            <i className="heat-swatch" style={{ background: HEAT_COLORS.warm }} />
-            <i className="heat-swatch" style={{ background: HEAT_COLORS.hot }} />
-            <i className="heat-swatch" style={{ background: HEAT_COLORS.hotter }} />
+            <i className="heat-swatch" data-glass={HEAT_GLASS.cold} style={{ background: HEAT_COLORS.cold }} />
+            <i className="heat-swatch" data-glass={HEAT_GLASS.cool} style={{ background: HEAT_COLORS.cool }} />
+            <i className="heat-swatch" data-glass={HEAT_GLASS.warm} style={{ background: HEAT_COLORS.warm }} />
+            <i className="heat-swatch" data-glass={HEAT_GLASS.hot} style={{ background: HEAT_COLORS.hot }} />
+            <i className="heat-swatch" data-glass={HEAT_GLASS.hotter} style={{ background: HEAT_COLORS.hotter }} />
             <span>hot</span>
           </div>
+          {onClose && (
+            <button className="commands-close" onClick={onClose} title="Close">×</button>
+          )}
         </div>
+
+        {(
+          <form className="commands-add-form" onSubmit={submitAdd}>
+            <input
+              className="commands-add-label"
+              placeholder="Label (optional)"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+            />
+            <input
+              className="commands-add-text"
+              placeholder="Save a command or prompt..."
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+            />
+            <button className="commands-add-btn" type="submit" disabled={!newText.trim()}>Save</button>
+          </form>
+        )}
 
         <div className="commands-toolbar">
           <div className="commands-search-wrap">
@@ -152,7 +213,7 @@ export default function CommandsView() {
             className={`commands-cat-pill ${category === "all" ? "commands-cat-active" : ""}`}
             onClick={() => setCategoryFilter("all")}
           >
-            All
+            All<span className="commands-cat-count">{db.length}</span>
           </button>
           {categories.map((cat) => (
             <button
@@ -161,7 +222,7 @@ export default function CommandsView() {
               style={category === cat ? { borderColor: categoryColor(cat), color: categoryColor(cat) } : undefined}
               onClick={() => setCategoryFilter(cat === category ? "all" : cat)}
             >
-              {cat}
+              {cat}<span className="commands-cat-count">{db.filter((c) => c.category === cat).length}</span>
             </button>
           ))}
         </div>
@@ -181,6 +242,7 @@ export default function CommandsView() {
                   <div
                     key={cmd.id}
                     className="commands-item"
+                    data-glass={HEAT_GLASS[heat]}
                     style={{
                       borderLeftColor: HEAT_COLORS[heat],
                       "--heat": HEAT_COLORS[heat],
@@ -190,6 +252,7 @@ export default function CommandsView() {
                     } as CSSProperties}
                   >
                     <div className="commands-item-top">
+                      <span className="commands-meter"><i style={{ width: `${Math.min(20, cmd.copyCount * 2) * 5}%` }} /></span>
                       <span
                         className="commands-heat-dot"
                         style={{ background: HEAT_COLORS[heat], boxShadow: `0 0 8px ${HEAT_COLORS[heat]}55` }}
@@ -211,7 +274,7 @@ export default function CommandsView() {
                     </code>
                     <div className="commands-item-actions">
                       <button className="commands-copy-btn" onClick={() => copy(cmd.text, cmd.id)}>
-                        {copiedId === cmd.id ? "Copied" : "Copy"}
+                        <Icon name={copiedId === cmd.id ? "check" : "copy"} size={12} />{copiedId === cmd.id ? "Copied" : "Copy"}
                       </button>
                       <select
                         className="commands-cat-select"

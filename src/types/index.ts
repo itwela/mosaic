@@ -21,6 +21,7 @@ export interface LaunchItem {
 export interface Panel {
   id: string;
   type?: "terminal" | "launcher" | "usage" | "fieldnotes" | "zen";
+  compactHeight?: number;
   // terminal
   tabs: Tab[];
   activeTabId: string;
@@ -35,6 +36,7 @@ export interface Workspace {
   id: string;
   name: string;
   panels: Panel[];
+  soloLayout?: { width: number; height: number; centered: boolean };
   layout: number[]; // panel size percentages for resizable-panels
 }
 

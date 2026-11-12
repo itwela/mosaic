@@ -1,3 +1,4 @@
+import { version } from "../../src-tauri/tauri.conf.json";
 import "./AboutView.css";
 
 export default function AboutView() {
@@ -17,6 +18,7 @@ export default function AboutView() {
           <span>Productivity</span>
         </div>
         <div className="about-handle">@cavemancreativehq</div>
+        <div className="about-version">mosaic v{version}</div>
       </div>
     </div>
   );

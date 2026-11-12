@@ -90,3 +90,12 @@
   padding: 4px;
   overflow: hidden;
 }
+
+.all-slot-tab { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+.all-slot-tab .tab-shell-glyph { display: none; }
+.all-slot-ws { display: inline-flex; align-items: center; gap: 6px; }
+.all-slot-ws-chip, .all-slot-ws .ic { display: none; }
+.all-slot-state { display: none; }
+.all-slot-open { display: none; }
+.all-running-actions { margin-left: auto; }
+.all-running-stack { grid-auto-rows: 300px; overflow-y: auto; }

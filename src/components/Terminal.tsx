@@ -76,26 +76,27 @@ export function releaseTerminal(id: string, host: HTMLElement) {
 // whose background matches that theme's .terminal-panel exactly.
 const TERMINAL_THEMES: Record<ThemeId, ITheme> = {
   mosaic: {
-    background: "#0e0a07",
-    foreground: "#F6F0E6",
-    cursor: "#c97d3a",
-    selectionBackground: "#c97d3a40",
-    black: "#1e1410",
-    brightBlack: "#4a3523",
-    red: "#c94a3a",
-    brightRed: "#e05a48",
-    green: "#8aab6a",
-    brightGreen: "#9dbf7a",
-    yellow: "#c97d3a",
-    brightYellow: "#dfa050",
-    blue: "#7a9cbf",
-    brightBlue: "#90b4d8",
-    magenta: "#b07a8a",
-    brightMagenta: "#c88a9a",
-    cyan: "#7aab9c",
-    brightCyan: "#8ac0b0",
-    white: "#F6F0E6",
-    brightWhite: "#ffffff",
+    background: "#090706",
+    foreground: "#F4EEE4",
+    cursor: "#F4EEE4",
+    cursorAccent: "#090706",
+    selectionBackground: "#F4EEE433",
+    black: "#16110E",
+    brightBlack: "#5E564C",
+    red: "#F0564E",
+    brightRed: "#F4606A",
+    green: "#7FD6A0",
+    brightGreen: "#9BE3B6",
+    yellow: "#F5B041",
+    brightYellow: "#FFCB62",
+    blue: "#8FB8FF",
+    brightBlue: "#A9C8FF",
+    magenta: "#EA7AD6",
+    brightMagenta: "#F09AE0",
+    cyan: "#58CDB4",
+    brightCyan: "#7CE2C4",
+    white: "#C4BAAB",
+    brightWhite: "#F4EEE4",
   },
   aero: {
     background: "#0b2c4d",
@@ -158,9 +159,10 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       fontSize: 13,
       lineHeight: 1.4,
       cursorBlink: true,
+      scrollback: 1500,
       // Deliberately NOT allowTransparency. Nothing here is actually see-through
       // — the theme background, .terminal-panel and the Tauri window are all the
-      // same opaque #0e0a07 — but the flag makes xterm stop painting opaque row
+      // same opaque colour — but the flag makes xterm stop painting opaque row
       // backgrounds, and WebKit then leaves stale glyph pixels behind whenever
       // the buffer scrolls. That's the garbling that only a full repaint clears.
     });
@@ -235,7 +237,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
         window.dispatchEvent(new CustomEvent("mosaic-agent-screen", { detail: { id, state } }));
       }
     };
-    const screenInterval = setInterval(publishScreen, 1000);
+    screenTimer = setTimeout(publishScreen, 300);
     term.onData((data) => {
       invoke("pty_write", { id, data }).catch(console.error);
       window.dispatchEvent(new CustomEvent("mosaic-agent-input", { detail: { id, at: Date.now() } }));
@@ -318,7 +320,6 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
       if (rafId !== null) cancelAnimationFrame(rafId);
       if (live.get(id)?.element === term.element) live.delete(id);
       if (screenTimer) clearTimeout(screenTimer);
-      clearInterval(screenInterval);
       ro.disconnect();
       unlisten1?.();
       unlisten2?.();

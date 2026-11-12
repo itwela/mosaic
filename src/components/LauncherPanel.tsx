@@ -1,3 +1,4 @@
+import Icon from "./Icon";
 import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { open as pickFile } from "@tauri-apps/plugin-dialog";
@@ -36,8 +37,9 @@ const EXT_COLORS: Record<string, string> = {
 
 function faviconUrl(url: string) {
   try {
-    const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    if (!["https:", "http:"].includes(parsed.protocol)) return null;
+    return `${parsed.origin}/favicon.ico`;
   } catch {
     return null;
   }
@@ -61,6 +63,37 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [actionsId, setActionsId] = useState<string | null>(null);
+  const panelRoot = useRef<HTMLDivElement>(null);
+
+  function focusActionsTrigger() {
+    panelRoot.current?.querySelector<HTMLButtonElement>('.launcher-card-more[aria-expanded="true"]')?.focus();
+  }
+
+  useEffect(() => {
+    if (!actionsId) return;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Let another disclosure in this panel switch rows without closing it
+      // again as the same click bubbles to the window.
+      if (target.closest(".launcher-card-more") && target.closest(".launcher-panel") === panelRoot.current) return;
+      const expandedCard = panelRoot.current?.querySelector('.launcher-card-more[aria-expanded="true"]')?.closest(".launcher-card");
+      if (!expandedCard?.contains(target)) setActionsId(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        focusActionsTrigger();
+        setActionsId(null);
+      }
+    };
+    window.addEventListener("click", onClick);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", onClick);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [actionsId]);
 
   // the add menu closes on any click outside it
   useEffect(() => {
@@ -97,8 +130,8 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
 
   useEffect(() => {
     for (const item of items) {
-      if (fetchedPaths.current.has(item.path)) continue;
-      fetchedPaths.current.add(item.path);
+      if (fetchedPaths.current.has(`${item.id}:${item.path}`)) continue;
+      fetchedPaths.current.add(`${item.id}:${item.path}`);
 
       if (item.kind === "url") {
         const favicon = faviconUrl(item.path);
@@ -152,6 +185,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
   }
 
   function removeItem(id: string) {
+    setActionsId(null);
     const index = items.findIndex((i) => i.id === id);
     const item = items[index];
     save(items.filter((i) => i.id !== id));
@@ -169,6 +203,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
   }
 
   function startEdit(item: LaunchItem) {
+    setActionsId(null);
     setEditingId(item.id);
     setEditName(item.name);
     setEditUrl(item.path);
@@ -249,7 +284,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
   })();
 
   return (
-    <div className="launcher-panel">
+    <div className="launcher-panel" ref={panelRoot}>
       <div className="launcher-header">
         <button
           className="panel-drag-grip"
@@ -259,7 +294,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
             onReorderStart(panelIndex, e.clientX, e.clientY);
           }}
         >
-          <span className="grip-dots">⠿</span>
+          <Icon name="grip" className="grip-dots" />
         </button>
         {renaming ? (
           <input
@@ -276,12 +311,13 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
         ) : (
           <span
             className="launcher-label"
-            title="Double-click to rename"
+            title={`${panel.name || "Launcher"} · Double-click to rename`}
             onDoubleClick={(e) => { e.stopPropagation(); setNameDraft(panel.name ?? ""); setRenaming(true); }}
           >
             {panel.name || "Launcher"}
           </span>
         )}
+        {!renaming && <span className="launcher-count">{items.length} {items.length === 1 ? "shortcut" : "shortcuts"}</span>}
         <div className="launcher-header-actions">
           <div className="launcher-add-wrap">
             <button
@@ -289,7 +325,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
               onClick={() => setAddMenuOpen((o) => !o)}
               title="Add a file, app or URL"
             >
-              +
+              <Icon name="plus" size={13} />
             </button>
             {addMenuOpen && (
               <div className="launcher-add-menu">
@@ -306,7 +342,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
               disabled={launching}
               title="Open everything in this launcher"
             >
-              {launching ? "Launching…" : "▶ Launch"}
+              {launching ? "Launching…" : <><Icon name="play" size={13} /><span className="launcher-launch-label">Launch</span></>}
             </button>
           )}
           <button className="launcher-panel-close-btn" onClick={onClosePanel} title="Close panel">
@@ -351,10 +387,7 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
       {items.length > 0 && (
         <div className="launcher-toolbar">
           <div className="launcher-search-wrap">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="launcher-search-icon">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
+            <Icon name="search" className="launcher-search-icon" />
             <input
               className="launcher-search-input"
               placeholder="Search..."
@@ -367,6 +400,9 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
               </button>
             )}
           </div>
+          <select className="launcher-sort-select" aria-label="Sort shortcuts" value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}>
+            <option value="none">Saved order</option><option value="name-asc">A–Z</option><option value="name-desc">Z–A</option><option value="type">Type</option>
+          </select>
           <div className="launcher-sort-group">
             <button
               className={`launcher-sort-btn ${sortMode === "name-asc" ? "launcher-sort-active" : ""}`}
@@ -458,17 +494,26 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
               ) : (
               <div
                 key={item.id}
-                className={`launcher-card ${copiedId === item.id ? "launcher-card-copied" : ""}`}
+                className={`launcher-card launcher-card-disclosure ${copiedId === item.id ? "launcher-card-copied" : ""}`}
+                // Each shortcut is a tile of glass: links cobalt, apps violet, folders amber, files teal.
+                data-glass={item.kind === "url" ? "cobalt" : /\.app\/?$/i.test(item.path) ? "violet" : /\.[a-z0-9]{1,8}$/i.test(item.path) ? "teal" : "amber"}
                 // Clicking the card itself copies its link (or path); ▶ opens it.
-                onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) void copyLink(item); }}
+                onClick={(e) => { if (!(e.target as HTMLElement).closest("button, .launcher-item-actions")) void copyLink(item); }}
                 title={item.kind === "url" ? "Click to copy link" : "Click to copy path"}
               >
-                <div className="launcher-card-icon">
+                <div className={`launcher-card-icon ${previews[item.id] && !previews[item.id]?.startsWith("text:") ? "has-preview" : ""}`}>
                   {(() => {
                     const p = previews[item.id];
                     if (item.kind === "url") {
                       return p
-                        ? <img src={p} className="launcher-card-preview-img" alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ? <img src={p} className="launcher-card-preview-img" alt="" onError={e => {
+                          const image = e.currentTarget;
+                          if (!image.dataset.fallback) {
+                            image.dataset.fallback = "true";
+                            try { const url = new URL(/^https?:\/\//i.test(item.path) ? item.path : `https://${item.path}`); image.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`; return; } catch {}
+                          }
+                          setPreviews(prev => ({ ...prev, [item.id]: null }));
+                        }} referrerPolicy="no-referrer" />
                         : <div className="ext-badge" style={{ background: "#3a6bc9" }}>URL</div>;
                     }
                     if (typeof p === "string" && p.startsWith("text:")) {
@@ -481,36 +526,46 @@ export default function LauncherPanel({ panel, panelIndex, onReorderStart, onUpd
                   })()}
                 </div>
                 <div className="launcher-card-info">
-                  <span className="launcher-card-name">{item.name}{copiedId === item.id && <span className="launcher-copied-flag">copied</span>}</span>
-                  <span className="launcher-card-path">
+                  <span className="launcher-card-name" title={item.name}>{item.name}{copiedId === item.id && <span className="launcher-copied-flag">copied</span>}</span>
+                  <span className="launcher-card-path" title={item.path}>
                     {item.kind === "url" ? item.path : item.path.replace(/^\/Users\/[^/]+/, "~")}
                   </span>
                 </div>
-                <div className="launcher-card-actions">
-                  <button className="launcher-card-launch" onClick={() => launchOne(item)} title="Open">
+                <button
+                  className="launcher-card-more"
+                  aria-label={`Actions for ${item.name}`}
+                  aria-expanded={actionsId === item.id}
+                  aria-controls={`launcher-actions-${item.id}`}
+                  title={actionsId === item.id ? "Hide actions" : "Show actions"}
+                  onClick={() => setActionsId((current) => current === item.id ? null : item.id)}
+                >
+                  <Icon name="more" size={16} />
+                </button>
+                {actionsId === item.id && <div className="launcher-item-actions" id={`launcher-actions-${item.id}`} role="group" aria-label={`Actions for ${item.name}`}>
+                  <button className="launcher-item-action" onClick={() => { focusActionsTrigger(); setActionsId(null); void launchOne(item); }} title="Open">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                       <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
-                  </button>
-                  <button className="launcher-card-copy" onClick={() => void copyLink(item)} title={item.kind === "url" ? "Copy link" : "Copy path"}>
+                  <span className="launcher-action-label">Open</span></button>
+                  <button className="launcher-item-action" onClick={() => { focusActionsTrigger(); setActionsId(null); void copyLink(item); }} title={item.kind === "url" ? "Copy link" : "Copy path"}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
-                  </button>
-                  <button className="launcher-card-edit" onClick={() => startEdit(item)} title="Edit">
+                  <span className="launcher-action-label">Copy</span></button>
+                  <button className="launcher-item-action" onClick={() => startEdit(item)} title="Edit">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 20h9"/>
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
-                  </button>
-                  <button className="launcher-card-remove" onClick={() => removeItem(item.id)} title="Remove">
+                  <span className="launcher-action-label">Edit</span></button>
+                  <button className="launcher-item-action launcher-item-action-remove" onClick={() => removeItem(item.id)} title="Remove">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 6 6 18" />
                       <path d="m6 6 12 12" />
                     </svg>
-                  </button>
-                </div>
+                  <span className="launcher-action-label">Remove</span></button>
+                </div>}
               </div>
               )
             ))}

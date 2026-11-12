@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Mosaic needs Desktop access when your agent workspaces or screenshot folder live there. You only need to Allow this once in System Settings.</string>
+	<string>Mosaic needs Desktop access when your agent workspaces or screenshot folder live there. Allow access for this build of Mosaic.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Mosaic needs Documents access when an agent or launcher opens files there. You only need to Allow this once in System Settings.</string>
+	<string>Mosaic needs Documents access when an agent or launcher opens files there. Allow access for this build of Mosaic.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Mosaic needs Downloads access when an agent or launcher opens files there. You only need to Allow this once in System Settings.</string>
+	<string>Mosaic needs Downloads access when an agent or launcher opens files there. Allow access for this build of Mosaic.</string>
 </dict>
 </plist>

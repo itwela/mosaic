@@ -653,3 +653,8 @@
   outline-offset: -2px;
   background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
+
+/* compact window: the open sidebar floats over the panes */
+.sidebar-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.6); }
+.sidebar-peek { position: fixed; top: 0; bottom: 0; left: 0; z-index: 41; }
+.app:has(.sidebar-peek) { padding-left: 56px; }

@@ -6,6 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="mosaic-skin.css">
+  <link rel="stylesheet" href="glass-skin.css">
   <link rel="stylesheet" href="aero-skin.css">
 </head>
 <body>
@@ -16,7 +17,7 @@
           <span class="mark"></span>
           <div>
             <div class="eyebrow" id="masthead-eyebrow">FIELDNOTES</div>
-            <h1>Fieldnotes</h1>
+            <h1><span class="h1-app">Fieldnotes</span><span class="h1-client" id="masthead-client"></span></h1>
           </div>
         </div>
         <div class="header-right">
@@ -95,6 +96,15 @@
         <button type="button" class="icon-button" data-close aria-label="Close details">×</button>
       </div>
       <p id="detail-copy" class="detail-copy"></p>
+    </form>
+  </dialog>
+  <dialog id="file-viewer" class="detail-dialog file-viewer">
+    <form method="dialog" novalidate>
+      <div class="dialog-head">
+        <strong id="file-title">File</strong>
+        <button type="button" class="icon-button" data-close aria-label="Close file">×</button>
+      </div>
+      <div id="file-body" class="file-body"></div>
     </form>
   </dialog>
   <dialog id="client-dialog" class="note-dialog">

@@ -10,7 +10,7 @@ const standardCycle = ['pending', 'in-progress', 'done', 'blocked'];
 const reviewCycle = ['not-checked', 'in-progress', 'done', 'blocked'];
 
 // Built-in clients load from the git-ignored my-clients.js when it exists.
-const baseClients = window.FIELDNOTES_BASE_CLIENTS || [];
+let baseClients = window.FIELDNOTES_BASE_CLIENTS || [];
 
 let clients = [...baseClients];
 let activeClient = 'veh';
@@ -94,7 +94,7 @@ function getClientCollections() {
 function getWorkstreamsForCollection(col) {
   if (col.kind !== 'streams') return [];
   const sourceName = col.streamSource || 'FIELDNOTES_WORKSTREAMS';
-  const base = (window[sourceName] || []).map(s => ({
+  const base = (col.streams || window[sourceName] || []).map(s => ({
     ...s,
     tasks: s.tasks.map(t => ({ ...t, notes: t.notes || '' }))
   }));
@@ -157,7 +157,18 @@ function updateClientDropdown() {
   if (eyebrow) {
     const current = getCurrentClient();
     eyebrow.textContent = current.eyebrow || `${current.name.toUpperCase()} · CHECKLISTS`;
+    // The glass skin heads the page with the client, and Mosaic shows the group beside its own title.
+    const clientName = document.querySelector('#masthead-client');
+    if (clientName) clientName.textContent = current.name;
+    try { parent.postMessage({ type: 'fieldnotes-client', name: current.name, eyebrow: current.eyebrow || '' }, location.origin); } catch {}
   }
+}
+
+// One tile per item, done first, then active, blocked and untouched. Only the glass skin shows these.
+function statusTiles(list, cls) {
+  const rank = { done: 0, 'in-progress': 1, blocked: 2 };
+  const states = list.map(x => x.status).sort((a, b) => (rank[a] ?? 3) - (rank[b] ?? 3));
+  return `<span class="${cls}" aria-hidden="true">${states.map(st => `<i data-s="${rank[st] === undefined ? 'todo' : st}"></i>`).join('')}</span>`;
 }
 
 function render() {
@@ -188,7 +199,7 @@ function render() {
     const progressState = isComplete ? 'done' : (dCount > 0 ? 'active' : 'idle');
     return `
       <button class="tab ${x.id === active ? 'active' : ''}" data-tab="${x.id}" data-complete="${isComplete}" style="--pct: ${pct}%;">
-        <div class="tab-progress-bar" style="width: ${pct}%;"></div>
+        <div class="tab-progress-bar" style="width: ${pct}%; --pct: ${pct};"></div>
         <span class="tab-label">${esc(x.label)}</span>
         <span class="tab-badge" data-state="${progressState}">${dCount}/${total}${isComplete ? ' ✓' : ''}</span>
       </button>
@@ -224,7 +235,8 @@ function render() {
         <span><strong>${todo}</strong> remaining</span>
         ${attention ? `<span class="attention"><strong>${attention}</strong> attention</span>` : ''}
       </div>
-      <div class="progress"><i style="width: ${pct}%"></i></div>
+      <div class="progress"><i style="width: ${pct}%; --pct: ${pct};"></i></div>
+      ${statusTiles(items, 'progress-tiles')}
     </div>
   `;
   document.querySelector('#item-count').textContent = `${items.length} items`;
@@ -263,6 +275,16 @@ function draw(items) {
         <span>${labels[x.status] || 'To do'}</span>
       </button>
       ${x.notes ? `<button type="button" class="note-preview" data-note="${esc(x.id)}" aria-label="Edit note for ${esc(x.title)}" title="Click to edit note">${esc(x.notes)}</button>` : ''}
+      ${x.files?.length ? `
+        <div class="item-files">
+          ${x.files.map((f, n) => `
+            <button type="button" class="file-chip" data-file="${esc(x.id)}" data-file-index="${n}" title="Open ${esc(f.name)}">
+              <span class="file-ext">${esc(fileExtension(f).toUpperCase() || 'FILE')}</span>
+              <span class="file-name">${esc(f.name)}</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
       ${x.attachments?.length ? `
         <div class="attachments">
           ${x.attachments.map(a => `
@@ -305,9 +327,10 @@ function draw(items) {
       out += `
         <details class="workstream" data-group="${s.number}" data-complete="${isComplete}" ${expanded ? 'open' : ''}>
           <summary style="--pct: ${pct}%;">
-            <div class="group-progress-bar" style="width: ${pct}%;"></div>
+            <div class="group-progress-bar" style="width: ${pct}%; --pct: ${pct};"></div>
             <span class="group-number">${String(s.number).padStart(2, '0')}</span>
             <span class="group-title">${esc(s.title)}</span>
+            ${statusTiles(groupTasks, 'group-tiles')}
             <span class="group-progress" data-state="${progressState}">
               ${d}/${total}${isComplete ? ' ✓' : ''}
             </span>
@@ -368,6 +391,15 @@ function draw(items) {
     };
   });
 
+  // Wire attached files
+  document.querySelectorAll('.file-chip').forEach(el => {
+    el.onclick = () => {
+      const item = allItems().find(x => x.id === el.dataset.file);
+      const file = item?.files?.[Number(el.dataset.fileIndex)];
+      if (file) openFile(file);
+    };
+  });
+
   // Wire evidence trigger
   document.querySelectorAll('.evidence-trigger').forEach(el => {
     el.onclick = () => {
@@ -416,6 +448,111 @@ document.querySelector('#image-viewer').onclick = event => event.currentTarget.c
 
 function esc(s = '') {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+// Attached files: a task definition may list `files: [{ name, src }]`, where `src` is
+// relative to this folder (e.g. files/veh/write-up.md). Markdown is rendered, text and
+// data files shown as-is, images and PDFs displayed inline.
+const TEXT_FILES = ['txt', 'log', 'json', 'csv', 'yml', 'yaml', 'xml', 'html', 'js', 'ts', 'css', 'sql'];
+const IMAGE_FILES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+
+function fileExtension(file) {
+  const match = /\.([a-z0-9]+)$/i.exec(file.src || file.name || '');
+  return match ? match[1].toLowerCase() : '';
+}
+
+async function openFile(file) {
+  const dialog = document.querySelector('#file-viewer');
+  const body = document.querySelector('#file-body');
+  const ext = fileExtension(file);
+  document.querySelector('#file-title').textContent = file.name;
+  body.className = 'file-body';
+  body.innerHTML = '<p class="file-status">Loading…</p>';
+  dialog.showModal();
+  try {
+    if (IMAGE_FILES.includes(ext)) {
+      body.innerHTML = `<img class="file-image" src="${esc(file.src)}" alt="${esc(file.name)}">`;
+      return;
+    }
+    if (ext === 'pdf') {
+      body.classList.add('file-body-frame');
+      body.innerHTML = `<iframe class="file-frame" src="${esc(file.src)}" title="${esc(file.name)}"></iframe>`;
+      return;
+    }
+    const response = await fetch(file.src, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    if (ext === 'md' || ext === 'markdown') {
+      body.classList.add('markdown');
+      body.innerHTML = renderMarkdown(text);
+    } else if (TEXT_FILES.includes(ext)) {
+      body.innerHTML = `<pre class="file-text">${esc(text)}</pre>`;
+    } else {
+      body.innerHTML = `<p class="file-status">This file type can't be previewed here.</p>`;
+    }
+  } catch (error) {
+    body.innerHTML = `<p class="file-status">Could not open ${esc(file.name)} (${esc(error.message)}). Check that ${esc(file.src)} exists in the fieldnotes folder.</p>`;
+  }
+}
+
+// A small Markdown renderer for write-ups: headings, paragraphs, lists, tables,
+// fenced code, rules, and inline code/bold/italic/links. Input is escaped first.
+function renderMarkdown(source) {
+  const inline = text => esc(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const cells = row => row.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const lines = source.replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    if (line.startsWith('```')) {
+      const code = [];
+      for (i++; i < lines.length && !lines[i].startsWith('```'); i++) code.push(lines[i]);
+      i++;
+      out.push(`<pre><code>${esc(code.join('\n'))}</code></pre>`);
+      continue;
+    }
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+    if (heading) {
+      const level = heading[1].length;
+      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+    if (/^(-{3,}|\*{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+    if (line.trim().startsWith('|') && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1] || '')) {
+      const head = cells(line);
+      const rows = [];
+      for (i += 2; i < lines.length && lines[i].trim().startsWith('|'); i++) rows.push(cells(lines[i]));
+      out.push(`<div class="md-table"><table><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${
+        rows.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    const listItem = /^\s*([-*]|\d+\.)\s+(.*)$/;
+    if (listItem.test(line)) {
+      const ordered = /^\s*\d+\./.test(line);
+      const items = [];
+      while (i < lines.length && (listItem.test(lines[i]) || (/^\s{2,}\S/.test(lines[i]) && items.length))) {
+        const match = listItem.exec(lines[i]);
+        if (match) items.push(match[2]);
+        else items[items.length - 1] += ` ${lines[i].trim()}`;
+        i++;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      out.push(`<${tag}>${items.map(t => `<li>${inline(t)}</li>`).join('')}</${tag}>`);
+      continue;
+    }
+    const para = [];
+    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|\s*([-*]|\d+\.)\s|\s*\|)/.test(lines[i])) para.push(lines[i++].trim());
+    if (!para.length) para.push(lines[i++].trim());
+    out.push(`<p>${inline(para.join(' '))}</p>`);
+  }
+  return out.join('\n');
 }
 
 // Client switching
@@ -838,6 +975,60 @@ document.querySelector('#import-picker').onchange = async event => {
 };
 
 // Initialization
+let clientsSnapshot = null;
+let clientSourceSnapshot = null;
+let sourceClients = null;
+let refreshingClients = false;
+async function refreshClients() {
+  if (!invoke || refreshingClients) return;
+  refreshingClients = true;
+  try {
+    const sources = await invoke('load_client_source');
+    let fresh;
+    if (sources) {
+      const sourceSnapshot = JSON.stringify(sources);
+      if (sourceSnapshot !== clientSourceSnapshot) {
+        // Evaluate trusted local data against an isolated window object so a
+        // partial edit cannot replace the data currently on screen.
+        const data = new Function('window', sources.join('\n;\n') + '\n;return window;')({});
+        const next = data.FIELDNOTES_BASE_CLIENTS;
+        if (!Array.isArray(next)) throw new Error('Missing Field notes clients');
+        for (const client of next) {
+          for (const collection of client.collections || []) {
+            if (collection.kind === 'streams') {
+              collection.streams = collection.streams || data[collection.streamSource || 'FIELDNOTES_WORKSTREAMS'];
+              if (!Array.isArray(collection.streams)) throw new Error('Missing workstream data');
+              delete collection.streamSource;
+            }
+          }
+        }
+        sourceClients = next;
+        clientSourceSnapshot = sourceSnapshot;
+      }
+      fresh = sourceClients;
+    } else {
+      fresh = await invoke('load_clients');
+    }
+    if (!Array.isArray(fresh)) return;
+    const snapshot = JSON.stringify(fresh);
+    if (snapshot === clientsSnapshot) return;
+    // Keep an open note editor and screenshot dialog intact until dismissed.
+    if (document.querySelector('dialog[open]')) return;
+    baseClients = fresh;
+    clients = [...baseClients];
+    for (const client of state._custom_clients || []) {
+      if (!clients.some(c => c.id === client.id)) clients.push(client);
+    }
+    if (!clients.some(c => c.id === activeClient)) activeClient = clients[0]?.id || '';
+    clientsSnapshot = snapshot;
+    render();
+  } catch (error) {
+    console.warn('Could not refresh Field notes clients; keeping current data', error);
+  } finally {
+    refreshingClients = false;
+  }
+}
+
 async function init() {
   try {
     state = invoke ? await invoke('load_state') : JSON.parse(localStorage.getItem(key) || '{}');
@@ -851,6 +1042,10 @@ async function init() {
       if (!clients.some(x => x.id === c.id)) clients.push(c);
     }
   }
+
+  await refreshClients();
+  setInterval(refreshClients, 2000);
+  window.addEventListener('focus', refreshClients);
 
   // Restore active client & tab
   if (['none', ...sortRest].includes(state._settings?.sortFirst)) sortFirst = state._settings.sortFirst;
@@ -915,3 +1110,10 @@ async function init() {
 }
 
 init();
+
+// Compact page controls are in Mosaic's outer title bar.
+window.addEventListener('message', event => {
+  if (event.source !== parent || event.origin !== location.origin) return;
+  if (event.data?.type === 'fieldnotes-tools') document.documentElement.classList.toggle('show-tools');
+  if (event.data?.type === 'fieldnotes-add') document.querySelector('#add-task-btn')?.click();
+});

@@ -1,0 +1,69 @@
+.first-run { position: fixed; inset: 0; overflow: auto; display: flex; padding: 32px 16px; font-family: var(--font-body); color: #f4eee4; background: #0e0b09; z-index: 100; }
+.setup-sheet { position: relative; width: 908px; max-width: 100%; margin: auto; padding: 32px 36px 28px; border: 4px solid #0b0a09; border-radius: 7px; background: rgba(14,11,9,.64); backdrop-filter: blur(22px); box-shadow: inset 0 1px rgba(255,255,255,.12), 0 20px 50px #0008; }
+.setup-brand { display: flex; align-items: center; gap: 10px; font: 600 24px var(--font-display); }
+.setup-brand img { width: 30px; height: 30px; }
+.setup-sheet h1 { margin: 26px 0 16px; font: 600 44px/1.2 var(--font-display); letter-spacing: -.5px; }
+.setup-intro { min-height: 42px; max-width: 610px; margin: 0 140px 24px 0; font-size: 13.5px; line-height: 21px; color: #c4baab; }
+.setup-progress { position: absolute; right: 36px; top: 118px; text-align: right; font: 14px var(--font-mono); }
+.setup-progress > div { display: flex; gap: 5px; margin-top: 12px; }
+.setup-progress i, .setup-chip { background: linear-gradient(#0007,#0007),var(--chip-unlit) center/cover; clip-path: polygon(8% 4%,94% 10%,100% 92%,2% 98%); }
+.setup-progress i { width: 19px; height: 19px; }
+.setup-progress i.lit, .complete .setup-chip { background: var(--chip-lit) center/cover; }
+.setup-steps { display: grid; gap: 9px; }
+.setup-step { display: flex; align-items: center; gap: 18px; min-height: 77px; padding: 11px 15px; border: 1px solid #ffffff1c; border-radius: 4px; background: #0004; }
+.setup-step.complete { border-color: #58cdb477; }
+.setup-step.waiting { border-color: #f5b04188; }
+.setup-chip { width: 26px; height: 28px; flex: none; display: grid; place-items: center; font-size: 18px; color: #15110d; }
+.setup-copy { flex: 1; min-width: 0; }
+.setup-step-title { font-size: 14px; font-weight: 600; }
+.setup-step-title small { margin-left: 28px; font-size: 11.5px; font-weight: 400; color: #8e8475; }
+.setup-copy p { margin-top: 4px; font-size: 12px; line-height: 17px; color: #c4baab; }
+.setup-action { flex: 0 0 165px; text-align: right; }
+.setup-sheet button { padding: 8px 12px; border: 1px solid #ffffff26; border-radius: 4px; background: #ffffff12; color: #f4eee4; font: 500 13px var(--font-body); cursor: pointer; }
+.setup-sheet button:hover { background: #ffffff24; }
+.setup-sheet button:disabled { opacity: .6; cursor: wait; }
+.setup-allowed { color: #58cdb4; font-size: 12px; }
+.setup-allowed small { display: block; margin-top: 4px; font-size: 11px; color: #8e8475; }
+.setup-footer { display: flex; align-items: center; gap: 16px; border-top: 1px solid #ffffff14; margin-top: 32px; padding-top: 18px; }
+.setup-footer > span { font-size: 12px; color: #8e8475; }
+.setup-sheet .setup-primary { margin-left: auto; flex-shrink: 0; background: url('/textures/chips/opal-lit-1.png') center/220px; color: #15110d; font-weight: 600; }
+.setup-signing-note { margin: 14px 0 0; color: #c4baab; font-size: 12px; line-height: 18px; }
+.setup-error { margin-top: 12px; color: #f78c86; font-size: 13px; white-space: pre-wrap; }
+.first-run-embedded { position: relative; background: none; flex: 1; height: 100%; }
+@media(max-width:620px) {
+ .first-run { padding: 12px 8px; }
+ .setup-sheet { min-height: 100%; padding: 20px 16px 24px; display: flex; flex-direction: column; }
+ .setup-brand { font-size: 22px; }
+ .setup-sheet h1 { font-size: 28px; margin: 24px 0 12px; }
+ .setup-intro { min-height: 44px; max-width: none; margin: 0 0 22px; font-size: 13px; line-height: 18px; }
+ .setup-progress { position: static; display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+ .setup-progress > div { margin: 0; gap: 6px; }
+ .setup-steps { gap: 9px; }
+ .setup-step { min-height: 65px; gap: 18px; padding: 11px 15px; }
+ .setup-chip { width: 26px; height: 28px; }
+ .setup-step-title { font-size: 14px; }
+ .setup-step-title small { display: block; margin: 4px 0 0; font-size: 12px; }
+ .setup-copy p, .setup-allowed small { display: none; }
+ .setup-action { flex: 0 0 auto; max-width: 100px; }
+ .setup-action button { font-size: 12px; padding: 7px 9px; }
+ .setup-allowed { font-size: 0; }
+ .setup-allowed::after { content: '✓'; font-size: 18px; }
+ .setup-footer { margin-top: auto; padding-top: 24px; border: 0; gap: 10px; }
+ .setup-footer > span { display: none; }
+ .setup-footer button { font-size: 13px; padding: 10px 12px; }
+}
+
+.first-run { isolation: isolate; }
+.setup-sheet { z-index: 0; }
+@media(max-width:620px) {
+ .setup-action button { max-width: 70px; }
+}
+
+.first-run { background: #0e0b09 url('/textures/glass.webp') top left/cover; }
+.first-run > .glass-ground { z-index: 0; }
+.setup-sheet { z-index: 1; }
+.setup-action .setup-compact-action { display: none; }
+@media(max-width:620px) {
+ .setup-action .setup-desktop-action { display: none; }
+ .setup-action .setup-compact-action { display: inline; }
+}

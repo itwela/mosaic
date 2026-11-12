@@ -1,10 +1,10 @@
-import { CSSProperties, useRef, useState } from "react";
+import Icon from "./Icon";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { Panel, SavedCommand, Tab } from "../types";
+import { Panel, Tab } from "../types";
 import { agentBadge, STATUS_COLORS, STATUS_LABELS, TabMeta } from "../lib/agents";
-import { recordCommand } from "../store/commands";
 import { pushUndo } from "../store/undo";
 import { restoreTab } from "../store/workspaces";
 import Terminal, { TerminalHandle } from "./Terminal";
@@ -20,8 +20,39 @@ interface Props {
   onClosePanel: () => void;
 }
 
+// When each tab entered its current status, so the pane can say how long it has been there.
+const statusSince = new Map<string, { status: string; at: number }>();
+export const PANE_STATUS_LABEL: Record<string, string> = { running: "Working", attention: "Needs you", ready: "Done", terminal: "Running", idle: "Idle" };
+
+export function sinceFor(tabId: string, status: string): number {
+  const cur = statusSince.get(tabId);
+  if (cur && cur.status === status) return cur.at;
+  const at = Date.now();
+  statusSince.set(tabId, { status, at });
+  return at;
+}
+
+export function elapsed(status: string, at: number): string {
+  const s = Math.max(0, Math.floor((Date.now() - at) / 1000));
+  if (status === "idle" || status === "ready") {
+    return `since ${new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  }
+  if (status === "attention") return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+}
+
 export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderStart, onUpdate, onClosePanel }: Props) {
   const activeTab = panel.tabs.find((t) => t.id === panel.activeTabId) ?? panel.tabs[0];
+  const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => new Set(activeTab ? [activeTab.id] : []));
+  useEffect(() => {
+    if (!activeTab) return;
+    setMountedTabs((prev) => {
+      if (prev.has(activeTab.id)) return prev;
+      const next = new Set(prev);
+      next.add(activeTab.id);
+      return next;
+    });
+  }, [activeTab?.id]);
   const termRefs = useRef<Map<string, TerminalHandle>>(new Map());
   const [toolboxOpen, setToolboxOpen] = useState(false);
 
@@ -67,27 +98,6 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
     });
   }
 
-  function addSavedCommand(cmd: SavedCommand) {
-    recordCommand(cmd.text, cmd.label);
-    onUpdate({
-      ...panel,
-      tabs: panel.tabs.map((t) =>
-        t.id === activeTab.id ? { ...t, savedCommands: [...(t.savedCommands ?? []), cmd] } : t
-      ),
-    });
-  }
-
-  function deleteSavedCommand(id: string) {
-    onUpdate({
-      ...panel,
-      tabs: panel.tabs.map((t) =>
-        t.id === activeTab.id
-          ? { ...t, savedCommands: (t.savedCommands ?? []).filter((c) => c.id !== id) }
-          : t
-      ),
-    });
-  }
-
   async function pickFolder() {
     const selected = await open({ directory: true, multiple: false });
     if (typeof selected === "string" && selected) {
@@ -111,7 +121,7 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
             onReorderStart(panelIndex, e.clientX, e.clientY);
           }}
         >
-          <span className="grip-dots">⠿</span>
+          <Icon name="grip" className="grip-dots" />
         </button>
         {panel.tabs.map((tab) => (
           <TabItem
@@ -125,7 +135,7 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           />
         ))}
         <button className="tab-add" onClick={addTab} title="New tab">
-          +
+          <Icon name="plus" size={13} />
         </button>
         <div className="tab-bar-spacer" />
         <button
@@ -133,23 +143,14 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           onClick={() => setToolboxOpen(true)}
           title="Command toolbox"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="7" width="20" height="14" rx="2" />
-            <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
-            <path d="M2 13h20" />
-            <path d="M10 13v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2" />
-          </svg>
+          <Icon name="box" />
         </button>
         <button
           className="clear-btn"
           onClick={clearActiveTerminal}
           title="Clear terminal"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
-            <path d="M22 21H7"/>
-            <path d="m5 11 9 9"/>
-          </svg>
+          <Icon name="erase" />
         </button>
         <button
           className={`folder-pin-btn ${savedPath ? "folder-pin-active" : ""}`}
@@ -158,12 +159,12 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
         >
           {shortPath ? (
             <span className="folder-pin-label">
-              <span className="folder-pin-icon">⌂</span>
+              <Icon name="home" size={12} className="folder-pin-icon" />
               <span className="folder-pin-text">{shortPath}</span>
             </span>
           ) : (
             <span className="folder-pin-label">
-              <span className="folder-pin-icon">⌂</span>
+              <Icon name="home" size={12} className="folder-pin-icon" />
               <span className="folder-pin-text">set folder</span>
             </span>
           )}
@@ -173,14 +174,11 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           onClick={onClosePanel}
           title="Close panel"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
+          <Icon name="close" size={13} />
         </button>
       </div>
       <div className="terminal-body">
-        {panel.tabs.map((tab) => (
+        {panel.tabs.filter((tab) => mountedTabs.has(tab.id) || tab.id === activeTab?.id).map((tab) => (
           <div
             key={tab.id}
             className="terminal-slot"
@@ -198,14 +196,27 @@ export default function TerminalPanel({ panel, panelIndex, tabMeta, onReorderSta
           </div>
         ))}
       </div>
+      {(() => {
+        // The footer speaks for the most urgent tab in the pane.
+        const rank = ["attention", "running", "ready", "terminal", "idle"];
+        const tabs = panel.tabs.map((t) => ({ t, status: tabMeta[t.id]?.status ?? "idle" }));
+        tabs.forEach(({ t, status }) => sinceFor(t.id, status));
+        const lead = tabs.slice().sort((a, b) => rank.indexOf(a.status) - rank.indexOf(b.status))[0];
+        const agents = tabs.filter(({ t }) => tabMeta[t.id]?.agent).length;
+        return (
+          <div className={`pane-status pane-status-${lead.status}`}>
+            <span className="pane-status-info">
+              {panel.tabs.length} {panel.tabs.length === 1 ? "shell" : "shells"}
+              {agents > 0 && ` · ${agents} ${agents === 1 ? "agent" : "agents"}`}
+            </span>
+            <span className="pane-status-state">
+              <b>{PANE_STATUS_LABEL[lead.status]}</b> {elapsed(lead.status, sinceFor(lead.t.id, lead.status))}
+            </span>
+          </div>
+        );
+      })()}
       {toolboxOpen && (
-        <CommandToolbox
-          tabTitle={activeTab.title}
-          commands={activeTab.savedCommands ?? []}
-          onClose={() => setToolboxOpen(false)}
-          onAdd={addSavedCommand}
-          onDelete={deleteSavedCommand}
-        />
+        <CommandToolbox onClose={() => setToolboxOpen(false)} />
       )}
     </div>
   );
@@ -240,6 +251,7 @@ function TabItem({
 
   return (
     <div className={`tab-item tab-status-${status} ${active ? "tab-active" : ""}`} style={{ "--tab-status": STATUS_COLORS[status] } as CSSProperties} title={`${STATUS_LABELS[status]} · double-click to rename`} onClick={onSelect} onDoubleClick={(e) => { e.stopPropagation(); setDraft(tab.title); setEditing(true); }}>
+      {!badge && <span className="tab-shell-glyph">$</span>}
       {badge && (badge.logo ?
         <img className="tab-agent-logo" src={badge.logo} alt={badge.name} title={badge.name} /> :
         <span className="tab-agent-name" title={badge.name}>{badge.name}</span>
@@ -272,7 +284,7 @@ function TabItem({
           onClose();
         }}
       >
-        ×
+        <Icon name="close" size={11} />
       </button>
     </div>
   );

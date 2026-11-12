@@ -81,3 +81,5 @@
   font-family: monospace;
   letter-spacing: 0.03em;
 }
+
+.about-version { display: none; }

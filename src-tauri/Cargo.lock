@@ -2183,10 +2183,12 @@ dependencies = [
 
 [[package]]
 name = "mosaic"
-version = "0.1.0"
+version = "0.2.2"
 dependencies = [
  "base64 0.22.1",
  "dirs 6.0.0",
+ "objc2",
+ "objc2-foundation",
  "portable-pty",
  "serde",
  "serde_json",
@@ -2198,6 +2200,7 @@ dependencies = [
  "tauri-plugin-global-shortcut",
  "tauri-plugin-opener",
  "tokio",
+ "toml_edit 0.20.2",
  "uuid",
 ]
 

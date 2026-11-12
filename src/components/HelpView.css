@@ -116,3 +116,6 @@
   color: var(--cream-dim);
   line-height: 1.6;
 }
+
+/* pieces the Mosaic glass theme turns on */
+.help-mark, .help-lights, .help-keycaps, .help-shortcut-win { display: none; }

@@ -5,6 +5,7 @@ import "./ZenPanel.css";
 
 interface Props {
   panelIndex: number;
+  active?: boolean;
   onReorderStart: (index: number, x: number, y: number) => void;
   onClosePanel: () => void;
 }
@@ -14,7 +15,7 @@ const ZEN_URL = "http://localhost:3003/";
 const ZEN_APP = "/Applications/Zen Studio.app";
 
 // Zen Studio as a workspace window: the running studio, embedded.
-export default function ZenPanel({ panelIndex, onReorderStart, onClosePanel }: Props) {
+export default function ZenPanel({ panelIndex, active = true, onReorderStart, onClosePanel }: Props) {
   const [up, setUp] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [launching, setLaunching] = useState(false);
@@ -22,7 +23,7 @@ export default function ZenPanel({ panelIndex, onReorderStart, onClosePanel }: P
 
   // Poll until the studio answers; an opaque no-cors response is enough to know it's there.
   useEffect(() => {
-    if (up) return;
+    if (up || !active) return;
     let stop = false;
     const check = () =>
       fetch(ZEN_URL, { mode: "no-cors" })
@@ -31,7 +32,7 @@ export default function ZenPanel({ panelIndex, onReorderStart, onClosePanel }: P
     check();
     const t = window.setInterval(check, 2000);
     return () => { stop = true; window.clearInterval(t); };
-  }, [up]);
+  }, [up, active]);
 
   // open_path doesn't report a missing app, so if the studio hasn't answered a while
   // after launching, say how to get it.

@@ -89,8 +89,8 @@ body,
     0 8px 22px rgba(0, 0, 0, 0.5);
 }
 
-.window-frame > .terminal-panel,
-.window-frame > .launcher-panel {
+.window-frame > .pane-content > .terminal-panel,
+.window-frame > .pane-content > .launcher-panel {
   border: none;
   border-radius: 1px;
   background: var(--glass);
@@ -504,21 +504,10 @@ body,
   box-shadow: 0 0 0 2px #e4e8ee, 0 0 12px rgba(228, 232, 238, 0.45);
 }
 
-/* hover the logo to peek at the glass: the panes fade away */
-.logo-mark {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.logo-mark:hover {
-  transform: scale(1.08);
-}
-
 .window-frame {
   transition: opacity 0.35s ease, box-shadow 0.2s ease;
 }
 
-.app:has(.logo-mark:hover) .window-frame,
 .panel-faded .window-frame {
   opacity: 0.55;
 }

@@ -43,13 +43,13 @@ export function makeUsagePanel(): Panel {
   return { id: uuidv4(), type: "usage", tabs: [], activeTabId: "" };
 }
 
-export function makeWorkspace(name: string, panelCount = 4): Workspace {
-  const panels = Array.from({ length: panelCount }, makePanel);
+export function makeWorkspace(name: string, panelCount?: number): Workspace {
+  const panels = panelCount === undefined ? [makePanel(), makeUsagePanel(), makeLauncherPanel()] : Array.from({ length: panelCount }, makePanel);
   return {
     id: uuidv4(),
     name,
     panels,
-    layout: panels.map(() => 100 / panelCount),
+    layout: panels.map(() => 100 / panels.length),
   };
 }
 
@@ -141,7 +141,7 @@ export function restoreLaunchItem(panelId: string, index: number, item: LaunchIt
 }
 
 // Move a panel (and its live shells) into another workspace. The source keeps
-// at least one panel so its grid never ends up empty.
+// its other panels; an empty source workspace is allowed.
 export function movePanelToWorkspace(panelId: string, targetWorkspaceId: string) {
   mutator?.((wss) => {
     const source = wss.find((w) => w.panels.some((p) => p.id === panelId));
@@ -150,7 +150,7 @@ export function movePanelToWorkspace(panelId: string, targetWorkspaceId: string)
     return wss.map((w) => {
       if (w.id === source.id) {
         const rest = w.panels.filter((p) => p.id !== panelId);
-        return { ...w, panels: rest.length ? rest : [makePanel()] };
+        return { ...w, panels: rest };
       }
       if (w.id === targetWorkspaceId) return { ...w, panels: [...w.panels, panel] };
       return w;

@@ -5,6 +5,13 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { AERO_WALLPAPERS, setTheme, setWallpaper, THEMES, useTheme, useWallpaper } from "../lib/theme";
 import "./SettingsView.css";
 
+// The Mosaic theme card: four rows of twelve cut tiles, every fourth one unlit.
+const SWATCH_GLASS = ["teal", "cobalt", "rose", "ruby", "amber", "ember", "ruby", "magenta", "cobalt", "teal", "sea", "violet"];
+const SWATCH_TILES = Array.from({ length: 48 }, (_, i) => {
+  const r = Math.floor(i / 12), c = i % 12;
+  return { glass: SWATCH_GLASS[(c + r * 5) % 12], lit: (c + r) % 4 !== 0 };
+});
+
 function shortPath(path: string) {
   if (!path) return "Not set";
   const home = path.match(/^\/Users\/[^/]+/);
@@ -95,13 +102,14 @@ export default function SettingsView() {
 
         <div className="settings-section">
           <div className="settings-section-label">Privacy</div>
+          <button className="settings-action" onClick={() => window.dispatchEvent(new Event("mosaic-open-setup"))}>Review setup permissions</button>
           <div className="settings-row">
             <div className="settings-row-info">
               <span className="settings-row-name">Screenshot folder</span>
               <span className="settings-row-desc">
-                Pick once. Mosaic only watches this folder — it no longer scans Desktop by default.
+                Pick once. Mosaic only watches this folder. It no longer scans Desktop by default.
               </span>
-              <span className="settings-row-desc">{shortPath(screenshotFolder)}</span>
+              <span className="settings-row-desc settings-row-value">{shortPath(screenshotFolder)}</span>
               {privacyError && <span className="settings-row-desc settings-error">{privacyError}</span>}
             </div>
             <div className="settings-actions">
@@ -119,8 +127,8 @@ export default function SettingsView() {
             <div className="settings-row-info">
               <span className="settings-row-name">macOS file access</span>
               <span className="settings-row-desc">
-                If agents live under Desktop (or Documents/Downloads), Allow Desktop once in System Settings.
-                Prefer the current <code>mosaic.app</code> — not <code>mosaic.app.old</code> — and enable Full Disk Access if prompts keep returning after rebuilds.
+                Allow each folder your agents use: Desktop, Documents and Downloads have separate permissions.
+                Pick the current <code>mosaic.app</code>. Ad-hoc rebuilds can invalidate saved grants; use the same signing certificate for installed updates.
               </span>
             </div>
             <button className="settings-action" onClick={() => void openPrivacySettings()}>
@@ -139,7 +147,10 @@ export default function SettingsView() {
                 onClick={() => setTheme(t.id)}
                 aria-pressed={theme === t.id}
               >
-                <span className={`theme-swatch theme-swatch-${t.id}`} />
+                <span className={`theme-swatch theme-swatch-${t.id}`}>
+                  {t.id === "mosaic" && SWATCH_TILES.map((tile, i) => <i key={i} data-glass={tile.glass} className={tile.lit ? "" : "unlit"} />)}
+                </span>
+                {theme === t.id && <span className="theme-option-check" data-glass="sea" />}
                 <span className="theme-option-name">{t.name}</span>
                 <span className="theme-option-desc">{t.desc}</span>
               </button>
@@ -168,7 +179,7 @@ export default function SettingsView() {
           <div className="settings-row">
             <div className="settings-row-info">
               <span className="settings-row-name">Launch at login</span>
-              <span className="settings-row-desc">Open mosaic automatically when you log in</span>
+              <span className="settings-row-desc">Open Mosaic automatically when you log in.</span>
             </div>
             <button
               className={`toggle ${launchAtLogin ? "toggle-on" : ""}`}
@@ -187,8 +198,8 @@ export default function SettingsView() {
             <div className="settings-row-info">
               <span className="settings-row-name">Claude Code status hooks</span>
               <span className="settings-row-desc">
-                Claude Code reports exactly when it is working, finished, or waiting for your approval,
-                instead of Mosaic guessing from the screen. Adds hooks to ~/.claude/settings.json
+                Claude Code reports exactly when it is working, finished or waiting for your approval,
+                so Mosaic does not have to guess from the screen. Adds hooks to ~/.claude/settings.json
                 (backed up first). They do nothing outside Mosaic. Restart running Claude sessions after installing.
               </span>
               {hooksError && <span className="settings-row-desc settings-error">{hooksError}</span>}
@@ -201,9 +212,9 @@ export default function SettingsView() {
             <div className="settings-row-info">
               <span className="settings-row-name">Codex approvals</span>
               <span className="settings-row-desc">
-                Mosaic listens for Codex's terminal notifications. Turn them on with
-                <code> [tui] notifications = true </code> in ~/.codex/config.toml.
+                Mosaic listens for Codex's terminal notifications. Turn them on in ~/.codex/config.toml:
               </span>
+              <span className="settings-row-desc settings-row-value">[tui] notifications = true</span>
             </div>
           </div>
         </div>

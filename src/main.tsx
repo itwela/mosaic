@@ -1,14 +1,73 @@
+import { useEffect, useState } from "react";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import FirstRun from "./components/FirstRun";
+import GlassGround from "./components/GlassGround";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyTheme } from "./lib/theme";
+import { hasCurrentSetup, SETUP_RECEIPT_KEY, SetupReceipt } from "./lib/setupIdentity";
 
 applyTheme();
 
-// NOTE: intentionally NOT wrapped in <React.StrictMode>. StrictMode double-
-// mounts every component in dev, and each Terminal mount spawns a real shell
-// process — so StrictMode makes every terminal spawn, get killed, and respawn
-// on open, bleeding the killed shell's exit output ("[process exited]", the
-// shell's session-save message) into the fresh terminal. One mount = one shell.
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <App />,
-);
+if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {
+  (await import("./dev/preview")).installPreview();
+}
+
+// Avoid StrictMode double mounts: each Terminal mount starts a real PTY.
+function MosaicRoot() {
+  const params = new URLSearchParams(location.search);
+  const preview = import.meta.env.DEV && !isTauri();
+  const forceSetup = preview && params.has("setup");
+  const previewStartup = preview && params.has("startup");
+  const [checking, setChecking] = useState(!preview || previewStartup);
+  const [setup, setSetup] = useState(forceSetup);
+  const [entered, setEntered] = useState(preview && !forceSetup && !previewStartup);
+  const [identity, setIdentity] = useState("");
+  const [error, setError] = useState("");
+  const [rechecking, setRechecking] = useState(false);
+
+  useEffect(() => {
+    if (preview && !previewStartup) return;
+    let active = true;
+    void invoke<string>("setup_identity").then(current => {
+      if (!current) throw new Error("App identity was empty.");
+      if (!active) return;
+      const stored = previewStartup
+        ? params.get("startup") === "current" ? JSON.stringify({ identity: current, disposition: "completed" }) : params.get("startup") === "legacy" ? null : localStorage.getItem(SETUP_RECEIPT_KEY)
+        : localStorage.getItem(SETUP_RECEIPT_KEY);
+      const ready = hasCurrentSetup(current, stored);
+      setIdentity(current);
+      setRechecking(!ready && !!localStorage.getItem("mosaic-setup-dismissed"));
+      setSetup(!ready);
+      setEntered(ready);
+      setChecking(false);
+    }).catch(e => { if (active) { setError(String(e)); setChecking(false); } });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const show = () => setSetup(true);
+    window.addEventListener("mosaic-open-setup", show);
+    return () => window.removeEventListener("mosaic-open-setup", show);
+  }, []);
+
+  function finish(skipped: boolean) {
+    if (identity) {
+      const receipt: SetupReceipt = { identity, disposition: skipped ? "skipped" : "completed" };
+      localStorage.setItem(SETUP_RECEIPT_KEY, JSON.stringify(receipt));
+    }
+    localStorage.setItem("mosaic-setup-dismissed", "1");
+    setEntered(true); setSetup(false);
+  }
+
+  if (checking || error) return <div className="first-run"><GlassGround /><section className="setup-sheet" role="status">
+    <h1>{error ? "Mosaic could not check setup" : "Opening Mosaic…"}</h1>
+    {error && <><p className="setup-error">{error}</p><button onClick={() => location.reload()}>Try again</button></>}
+  </section></div>;
+
+  return <>
+    {entered && <div style={{ display: setup ? "none" : "contents" }}><App /></div>}
+    {setup && <FirstRun rechecking={rechecking} onDone={finish} />}
+  </>;
+}
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(<MosaicRoot />);

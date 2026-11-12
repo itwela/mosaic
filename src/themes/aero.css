@@ -261,8 +261,8 @@
   background: transparent !important;
   border-bottom: none !important;
 }
-:root[data-theme="aero"] .window-frame > .terminal-panel,
-:root[data-theme="aero"] .window-frame > .launcher-panel {
+:root[data-theme="aero"] .window-frame > .pane-content > .terminal-panel,
+:root[data-theme="aero"] .window-frame > .pane-content > .launcher-panel {
   overflow: visible;
   border: none;
   background: transparent;

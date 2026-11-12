@@ -1,3 +1,4 @@
+mod setup;
 mod agents;
 mod fieldnotes;
 mod pty;
@@ -210,6 +211,70 @@ fn open_privacy_settings() -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn set_window_tucked(window: tauri::WebviewWindow, tucked: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::sync::Mutex;
+        static SAVED_FRAME: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
+
+        window.with_webview(move |webview| {
+            unsafe {
+                use objc2::msg_send;
+                use objc2::runtime::{AnyObject, Bool};
+                use objc2_foundation::{NSPoint, NSRect, NSSize};
+
+                let ns_window = webview.ns_window() as *mut AnyObject;
+                if ns_window.is_null() {
+                    return;
+                }
+
+                // Hide traffic light buttons (Close=0, Miniaturize=1, Zoom=2) while tucked so they don't overlap the pill
+                let hidden = Bool::new(tucked);
+                for btn_type in [0usize, 1usize, 2usize] {
+                    let btn: *mut AnyObject = msg_send![ns_window, standardWindowButton: btn_type];
+                    if !btn.is_null() {
+                        let _: () = msg_send![btn, setHidden: hidden];
+                    }
+                }
+
+                if tucked {
+                    let cur: NSRect = msg_send![ns_window, frame];
+                    *SAVED_FRAME.lock().unwrap() = Some((cur.origin.x, cur.origin.y, cur.size.width, cur.size.height));
+
+                    let screen: *mut AnyObject = msg_send![ns_window, screen];
+                    let vframe: NSRect = if !screen.is_null() {
+                        msg_send![screen, visibleFrame]
+                    } else {
+                        NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(1440.0, 900.0))
+                    };
+
+                    let w = 304.0;
+                    let h = 64.0;
+                    let x = vframe.origin.x + vframe.size.width - w - 16.0;
+                    let y = vframe.origin.y + 16.0;
+
+                    let min_size = NSSize::new(w, h);
+                    let _: () = msg_send![ns_window, setMinSize: min_size];
+
+                    let target = NSRect::new(NSPoint::new(x, y), NSSize::new(w, h));
+                    let _: () = msg_send![ns_window, setFrame: target, display: Bool::YES, animate: Bool::NO];
+                    let _: () = msg_send![ns_window, setLevel: 3isize]; // NSFloatingWindowLevel
+                } else {
+                    let _: () = msg_send![ns_window, setLevel: 0isize]; // NSNormalWindowLevel
+                    if let Some((x, y, w, h)) = SAVED_FRAME.lock().unwrap().take() {
+                        let target = NSRect::new(NSPoint::new(x, y), NSSize::new(w, h));
+                        let _: () = msg_send![ns_window, setFrame: target, display: Bool::YES, animate: Bool::NO];
+                    }
+                    let min_size = NSSize::new(390.0, 500.0);
+                    let _: () = msg_send![ns_window, setMinSize: min_size];
+                }
+            }
+        }).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[derive(serde::Serialize)]
 struct AppEntry {
     name: String,
@@ -266,7 +331,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, open_privacy_settings, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
+        .invoke_handler(tauri::generate_handler![setup::setup_identity, setup::setup_folders, setup::setup_disk_access, setup::setup_open_disk_settings, setup::setup_codex_enabled, setup::setup_enable_codex, pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, open_privacy_settings, set_window_tucked, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, agents::antigravity_login, agents::claude_web_login, agents::claude_resets, fieldnotes::fieldnotes_load_client_source, fieldnotes::fieldnotes_load_clients, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

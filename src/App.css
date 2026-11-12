@@ -88,3 +88,29 @@ body,
   pointer-events: none;
   box-shadow: inset 0 0 0 1px rgba(201, 125, 58, 0.28);
 }
+
+/* the corner pill shown while tucked */
+.tucked-pill {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 14px 0 12px;
+  border: 0;
+  background: var(--bg);
+  color: var(--cream);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.app[data-tucked] > .tucked-pill { display: flex; }
+.app[data-tucked] > :not(.tucked-pill):not(.glass-ground) { display: none !important; }
+.tucked-mark { width: 28px; height: 28px; flex: none; object-fit: contain; }
+.tucked-name { margin: 0 auto 0 10px; font: 600 18px/24px var(--font-display); color: var(--cream); overflow: hidden; text-overflow: ellipsis; }
+.tucked-count { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex: none; font: 500 13px var(--font-body); }
+.tucked-pill .ic { flex: none; margin-left: 4px; }

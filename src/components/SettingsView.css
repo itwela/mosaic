@@ -149,3 +149,6 @@
 }
 .settings-error { color: #e8796a; }
 .settings-row-desc code { font-size: 11px; color: var(--cream); }
+
+.theme-option-check { display: none; }
+.theme-swatch i { display: none; }

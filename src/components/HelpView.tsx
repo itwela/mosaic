@@ -1,4 +1,14 @@
+import { useNarrow } from "../lib/useNarrow";
+import { useTheme } from "../lib/theme";
 import "./HelpView.css";
+
+// The glass each concept's tile is cut from in the Mosaic theme.
+const CONCEPT_GLASS = ["ruby", "cobalt", "teal", "violet", "amber", "sea"];
+// In the Mosaic theme status is light in the glass, not a dot.
+const STATUS_LIGHT = {
+  label: "Status light",
+  desc: "The glass around a terminal tells you what is happening. Amber means an agent is running. Red means it is waiting on you. Dark means idle. Hover any terminal for a moment and it focuses itself.",
+};
 
 const concepts = [
   {
@@ -33,16 +43,22 @@ const shortcut = {
 };
 
 export default function HelpView() {
+  const glass = useTheme() === "mosaic";
+  const compact = useNarrow() && glass;
+  const compactDescriptions = [
+    "Named environments for different contexts.",
+    "Split your workspace into multiple terminal panes side by side.",
+    "Each panel holds multiple tabs.",
+    "Use the down-arrow beside a workspace to export its layout, terminals, tabs and launcher shortcuts.",
+    "Amber means an agent is running. Red means it is waiting on you. Dark means idle.",
+  ];
   return (
     <div className="help-view">
       <div className="help-card">
         <div className="help-eyebrow">What is this</div>
-        <h1 className="help-title">mosaic</h1>
+        <h1 className="help-title"><img className="help-mark" src="/textures/glass-art/icon.png" alt="" />mosaic</h1>
         <p className="help-lead">
-          A desktop terminal workspace manager. Instead of a pile of
-          unnamed terminal windows you lose track of, Mosaic gives every
-          session a home. Organized by workspace, split into panels,
-          tabbed however you need.
+          {compact ? "A desktop terminal workspace manager. Mosaic gives every session a home: organized by workspace, split into panels, tabbed however you need." : "A desktop terminal workspace manager. Instead of a pile of unnamed terminal windows you lose track of, Mosaic gives every session a home. Organized by workspace, split into panels, tabbed however you need."}
         </p>
 
         <p className="help-body">
@@ -53,12 +69,25 @@ export default function HelpView() {
         </p>
 
         <div className="help-concepts">
-          {concepts.map((c) => (
-            <div key={c.label} className="help-concept">
-              <span className="help-concept-label">{c.label}</span>
-              <span className="help-concept-desc">{c.desc}</span>
-            </div>
-          ))}
+          {concepts.map((item, i) => {
+            const c = glass && item.label === "Status dots" ? STATUS_LIGHT : item;
+            return (
+              <div key={c.label} className="help-concept" data-glass={CONCEPT_GLASS[i % CONCEPT_GLASS.length]}>
+                <span className="help-concept-label">
+                  {c.label}
+                  {c === STATUS_LIGHT && <span className="help-lights"><i /><i /><i /></span>}
+                </span>
+                <span className="help-concept-desc">{compact ? compactDescriptions[i] ?? c.desc : c.desc}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="help-shortcut">
+          <span className="help-shortcut-label">Screenshot mode</span>
+          <span className="help-shortcut-keys">{shortcut.keys}</span>
+          <span className="help-shortcut-desc">{shortcut.desc}<span className="help-shortcut-win"> Ctrl on Windows.</span></span>
+          <span className="help-keycaps"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>S</kbd></span>
         </div>
 
         <p className="help-footer">
@@ -66,12 +95,6 @@ export default function HelpView() {
           workspaces are exactly where you left them. Exported workspaces
           are portable JSON files you can copy between computers.
         </p>
-
-        <div className="help-shortcut">
-          <span className="help-shortcut-label">Screenshot mode</span>
-          <span className="help-shortcut-keys">{shortcut.keys}</span>
-          <span className="help-shortcut-desc">{shortcut.desc}</span>
-        </div>
       </div>
     </div>
   );

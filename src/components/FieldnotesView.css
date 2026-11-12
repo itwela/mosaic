@@ -1,5 +1,6 @@
 .fieldnotes-view {
   flex: 1;
+  flex-direction: column;
   min-width: 0;
   /* same dimmed wall as Mosaic's other pages; the iframe is transparent */
   background: rgba(6, 5, 4, 0.35);
@@ -28,3 +29,7 @@
   text-transform: uppercase;
   color: var(--cream);
 }
+
+/* the title bar and framed sheet belong to the Mosaic glass theme */
+.page-bar { display: none; }
+.page-sheet { flex: 1; min-height: 0; display: flex; }

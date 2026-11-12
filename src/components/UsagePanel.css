@@ -189,3 +189,91 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
 }
 .usage-drag-ghost img { width: 14px; height: 14px; }
+
+.usage-resets {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  white-space: nowrap;
+  opacity: 0.55;
+  border: 1px solid currentColor;
+}
+.usage-resets-on {
+  opacity: 1;
+  color: #2fbf71;
+  font-weight: 600;
+}
+.usage-plan + .usage-resets { margin-left: 6px; }
+
+.usage-idle {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--cream-dim);
+}
+.usage-idle-head {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.usage-grants {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--stone);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.usage-grants li { display: flex; flex-direction: column; gap: 1px; }
+.usage-grant-name { font-size: 12px; color: #2fbf71; font-weight: 600; }
+.usage-grant-meta { font-size: 11px; color: var(--cream-dim); }
+.usage-grant-off .usage-grant-name { color: var(--cream-dim); }
+
+.usage-pills { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; min-width: 0; }
+.usage-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  background: rgba(90, 130, 255, 0.16);
+  border: 1px solid rgba(90, 130, 255, 0.45);
+  white-space: nowrap;
+}
+.usage-pill-idle {
+  background: transparent;
+  border-color: var(--stone);
+  color: var(--cream-dim);
+}
+.usage-meter-row:has(.usage-pills) { align-items: flex-start; gap: 8px; }
+
+.usage-combo-pct { display: inline-flex; gap: 8px; }
+.usage-combo-pct span:first-child { opacity: 1; }
+.usage-bar-combo { position: relative; height: 10px; }
+.usage-bar-combo .usage-bar-fill { position: absolute; left: 0; }
+.usage-bar-combo .usage-bar-week { top: 0; bottom: 0; background: var(--usage-week) !important; opacity: 0.85; }
+.usage-bar-combo .usage-bar-short { top: 0; height: 4px; background: var(--usage-short) !important; border-radius: 999px; box-shadow: 0 0 0 1px rgba(0,0,0,0.35); }
+
+.usage-panel { --usage-short: #f5a524; --usage-week: #5b7cff; }
+.usage-c-short { color: var(--usage-short); }
+.usage-c-week { color: var(--usage-week); }
+.usage-legend { display: inline-flex; gap: 10px; margin-left: 12px; font-size: 11px; color: var(--cream-dim); }
+.usage-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.usage-swatch { display: inline-block; width: 14px; border-radius: 999px; }
+.usage-swatch-short { height: 4px; background: var(--usage-short); }
+.usage-swatch-week { height: 8px; background: var(--usage-week); }
+
+button.usage-resets { background: none; font: inherit; font-size: 10.5px; cursor: pointer; }
+button.usage-resets:disabled { cursor: default; }
+button.usage-resets.usage-resets-on { color: #2fbf71; }
+.usage-resets-open { background: rgba(47, 191, 113, 0.14) !important; }
+
+/* Usage is a dashboard, not a document. Resizing and rearranging must never
+   leave the provider names, meters, or countdowns selected. */
+.usage-panel, .usage-panel * { user-select: none; -webkit-user-select: none; }
+.usage-panel input, .usage-panel textarea { user-select: text; -webkit-user-select: text; }

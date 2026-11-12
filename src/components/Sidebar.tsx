@@ -1,8 +1,11 @@
+import Icon from "./Icon";
+import { version } from "../../src-tauri/tauri.conf.json";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AgentStatus, Workspace } from "../types";
 import { makeWorkspace } from "../store/workspaces";
 import { STATUS_COLORS, TabMeta } from "../lib/agents";
+import { useCompactSidebar } from "../lib/useNarrow";
 import "./Sidebar.css";
 
 // Counters tint their chip with the status hue instead of relying on the hue
@@ -21,6 +24,9 @@ function workspaceInitials(name: string): string {
   const letters = words.length === 1 ? words[0]!.slice(0, 2) : words[0]!.charAt(0) + words[1]!.charAt(0);
   return letters.toUpperCase();
 }
+
+// Each workspace owns one colour of glass, in the order the tiles are cut.
+export const GLASS_COLORS = ["ruby", "amber", "teal", "cobalt", "violet", "rose", "sea", "ember", "opal", "magenta"] as const;
 
 function countStyle(status: AgentStatus): CSSProperties {
   const color = STATUS_COLORS[status];
@@ -71,7 +77,13 @@ export default function Sidebar({
   onFieldnotes,
   onAllRunning,
 }: Props) {
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("mosaic-sidebar-collapsed") === "true");
+  const [userCollapsed, setCollapsed] = useState(() => localStorage.getItem("mosaic-sidebar-collapsed") === "true");
+  // Compact window: the sidebar is a rail, and opens over the panes instead of pushing them.
+  const narrow = useCompactSidebar();
+  const [peek, setPeek] = useState(false);
+  const collapsed = narrow ? !peek : userCollapsed;
+  useEffect(() => { if (!narrow) setPeek(false); }, [narrow]);
+  useEffect(() => { setPeek(false); }, [activeId, view]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -89,8 +101,8 @@ export default function Sidebar({
   workspacesRef.current = workspaces;
 
   useEffect(() => {
-    localStorage.setItem("mosaic-sidebar-collapsed", String(collapsed));
-  }, [collapsed]);
+    localStorage.setItem("mosaic-sidebar-collapsed", String(userCollapsed));
+  }, [userCollapsed]);
 
   // The workspace options menu closes on any click outside it.
   useEffect(() => {
@@ -177,18 +189,21 @@ export default function Sidebar({
   }
 
   return (
-    <div className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
-      <div className="sidebar-logo">
-        <img src="/mosaic-icon.png" alt="" className="logo-mark" />
+    <>
+    {narrow && peek && <div className="sidebar-scrim" onClick={() => setPeek(false)} />}
+    <div className={`sidebar ${collapsed ? "sidebar-collapsed" : ""} ${narrow ? "sidebar-narrow" : ""} ${narrow && peek ? "sidebar-peek" : ""}`}>
+      <div className="sidebar-logo" data-tauri-drag-region>
+        <img src="/mosaic-icon.png" alt="" className="logo-mark logo-mark-image" />
+<img src="/textures/glass-art/icon.png" alt="" className="logo-mark logo-mark-vector" />
         <span className="logo-text">mosaic</span>
         <button
           className="sidebar-collapse-btn"
-          onClick={() => setCollapsed((value) => !value)}
+          onClick={() => (narrow ? setPeek((value) => !value) : setCollapsed((value) => !value))}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!collapsed}
         >
-          {collapsed ? "›" : "‹"}
+          <Icon name={collapsed ? "chevr" : "back"} />
         </button>
       </div>
 
@@ -202,6 +217,8 @@ export default function Sidebar({
               key={ws.id}
               className={`workspace-item ${ws.id === activeId && view === "workspace" ? "workspace-active" : ""} ${drag?.index === index ? "workspace-dragging" : ""} ${showInsert && insertIndex === index ? "workspace-insert-before" : ""} ${showInsert && insertIndex === workspaces.length && index === workspaces.length - 1 ? "workspace-insert-after" : ""}`}
               data-workspace-index={index}
+              data-glass={GLASS_COLORS[index % GLASS_COLORS.length]}
+              data-glass-light={ws.id === activeId && view === "workspace" ? `${GLASS_COLORS[index % GLASS_COLORS.length]} 0.95 26` : undefined}
               data-workspace-id={ws.id}
               onClick={() => {
                 if (didDragRef.current) { didDragRef.current = false; return; }
@@ -320,7 +337,7 @@ export default function Sidebar({
                 <strong>{waiting}</strong>
               </span>}
             </span>
-            <span className="workspace-short-name" aria-hidden="true">∗</span>
+            <span className="workspace-short-name" aria-hidden="true"><Icon name="grid" size={15} /></span>
             <span className="workspace-name">All running</span>
           </div>
         );
@@ -352,7 +369,7 @@ export default function Sidebar({
       </button>
 
       <button className="add-workspace-btn" onClick={handleAdd}>
-        <span className="sidebar-action-icon">+</span><span className="sidebar-action-label">New workspace</span>
+        <span className="sidebar-action-icon"><Icon name="plus" /></span><span className="sidebar-action-label">New workspace</span>
       </button>
 
       <input
@@ -367,7 +384,7 @@ export default function Sidebar({
         }}
       />
       <button className="import-workspace-btn" onClick={() => importInputRef.current?.click()}>
-        <span className="sidebar-action-icon">↑</span><span className="sidebar-action-label">Import workspace</span>
+        <span className="sidebar-action-icon"><Icon name="imp" /></span><span className="sidebar-action-label">Import workspace</span>
       </button>
 
       <div className="sidebar-footer">
@@ -388,15 +405,17 @@ export default function Sidebar({
         <img src="/cc-logo.svg" alt="" className="about-btn-logo" />
         <span className="sidebar-action-label">Caveman Creative</span>
       </button>
+      <span className="sidebar-version">v{version}</span>
       </div>
 
       {drag && workspaces[drag.index] && createPortal(
         <div className="workspace-drag-ghost" style={{ left: drag.x, top: drag.y }}>
-          <span className="grip-dots">⠿</span>
+          <Icon name="grip" className="grip-dots" />
           <span>{workspaces[drag.index].name}</span>
         </div>,
         document.body,
       )}
     </div>
+    </>
   );
 }

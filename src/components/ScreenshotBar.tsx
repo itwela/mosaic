@@ -12,18 +12,21 @@ const thumbnails = new Map<string, string>();
 
 function Thumbnail({ shot, size = 160 }: { shot: Shot; size?: number }) {
   const key = `${shot.path}:${shot.modified}:${size}`;
-  const [src, setSrc] = useState(thumbnails.get(key));
+  const cacheable = size <= 160;
+  const [src, setSrc] = useState(() => (cacheable ? thumbnails.get(key) : undefined));
   useEffect(() => {
     let disposed = false;
-    if (thumbnails.has(key)) { setSrc(thumbnails.get(key)); return; }
+    if (cacheable && thumbnails.has(key)) { setSrc(thumbnails.get(key)); return; }
     setSrc(undefined);
     void invoke<string>("screenshot_thumbnail", { path: shot.path, size }).then((value) => {
-      if (thumbnails.size > 90) thumbnails.delete(thumbnails.keys().next().value!);
-      thumbnails.set(key, value);
+      if (cacheable) {
+        if (thumbnails.size >= 30) thumbnails.delete(thumbnails.keys().next().value!);
+        thumbnails.set(key, value);
+      }
       if (!disposed) setSrc(value);
     }).catch(() => {});
     return () => { disposed = true; };
-  }, [key, shot.path, size]);
+  }, [key, shot.path, size, cacheable]);
   return src ? <img src={src} alt={shot.name} draggable={false} /> : <span className="shot-placeholder">▧</span>;
 }
 

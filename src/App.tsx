@@ -13,6 +13,9 @@ import CommandsView from "./components/CommandsView";
 import AllRunningView from "./components/AllRunningView";
 import FieldnotesView from "./components/FieldnotesView";
 import UndoToast from "./components/UndoToast";
+import GlassGround from "./components/GlassGround";
+import Icon from "./components/Icon";
+import { getTheme, useTheme } from "./lib/theme";
 import { AgentStatus, Workspace } from "./types";
 import { sessionToMeta, SessionStatus, TabMeta, AgentScreenState, TabSignals } from "./lib/agents";
 import { createWorkspaceBundle, EmbeddedFile, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces, setWorkspaceMutator } from "./store/workspaces";
@@ -20,6 +23,7 @@ import { insertAt, pushUndo } from "./store/undo";
 import { recordCommand } from "./store/commands";
 import "./App.css";
 import "./luxury.css";
+import "./themes/glass.css";
 import "./themes/aero.css";
 
 type View = "workspace" | "all" | "about" | "help" | "settings" | "commands" | "fieldnotes";
@@ -29,12 +33,24 @@ const STATUS_POLL_MS = 2000;
 export default function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(loadWorkspaces);
   const [activeId, setActiveId] = useState<string>(workspaces[0].id);
+  const [mountedWorkspaces, setMountedWorkspaces] = useState<Set<string>>(() => new Set([workspaces[0].id]));
+  useEffect(() => {
+    setMountedWorkspaces((prev) => {
+      if (prev.has(activeId)) return prev;
+      const next = new Set(prev);
+      next.add(activeId);
+      return next;
+    });
+  }, [activeId]);
   const [view, setView] = useState<View>("workspace");
+  const theme = useTheme();
   // Field notes stays mounted after its first open so switching back is instant.
   const [fieldnotesOpened, setFieldnotesOpened] = useState(false);
   useEffect(() => { if (view === "fieldnotes") setFieldnotesOpened(true); }, [view]);
   const [tabMeta, setTabMeta] = useState<Record<string, TabMeta>>({});
   const screenshotToggleRef = useRef<() => void>(() => {});
+  // True while the window is tucked into its corner pill.
+  const [tucked, setTucked] = useState(false);
 
   useEffect(() => {
     setWorkspaceMutator((fn) => setWorkspaces(fn));
@@ -110,36 +126,46 @@ export default function App() {
       toggling = true;
       try {
         if (screenshotMode) {
-          await appWindow.setAlwaysOnTop(false);
-          await appWindow.setMinSize(new LogicalSize(800, 500));
-          if (screenshotNormal) {
-            await appWindow.setSize(screenshotNormal.size);
-            await appWindow.setPosition(screenshotNormal.position);
+          screenshotMode = false;
+          setTucked(false);
+          if (navigator.userAgent.includes("Mac")) {
+            await invoke("set_window_tucked", { tucked: false });
+          } else {
+            await appWindow.setAlwaysOnTop(false);
+            await appWindow.setMinSize(new LogicalSize(390, 500));
+            if (screenshotNormal) {
+              await appWindow.setSize(screenshotNormal.size);
+              await appWindow.setPosition(screenshotNormal.position);
+            }
           }
           screenshotNormal = null;
-          screenshotMode = false;
         } else {
-          const size = await appWindow.innerSize();
-          const position = await appWindow.outerPosition();
-          screenshotNormal = { size, position };
-          const monitor = await currentMonitor() ?? await primaryMonitor();
-          const w = 360;
-          const h = 200;
-          const mx = monitor?.position.x ?? 0;
-          const my = monitor?.position.y ?? 0;
-          const mw = monitor?.size.width ?? 0;
-          const mh = monitor?.size.height ?? 0;
-          const scale = monitor?.scaleFactor ?? 1;
-          const x = mx + mw - (w + 16) * scale;
-          const y = my + mh - (h + 48) * scale;
           screenshotMode = true;
+          setTucked(true);
           if (await appWindow.isFullscreen()) await appWindow.setFullscreen(false);
           if (await appWindow.isMaximized()) await appWindow.unmaximize();
-          await appWindow.setMinSize(new LogicalSize(w, h));
-          await appWindow.setSize(new LogicalSize(w, h));
-          await appWindow.setPosition(new PhysicalPosition(x, y));
-          await appWindow.setAlwaysOnTop(true);
-          screenshotMode = true;
+          if (navigator.userAgent.includes("Mac")) {
+            await invoke("set_window_tucked", { tucked: true });
+          } else {
+            const size = await appWindow.innerSize();
+            const position = await appWindow.outerPosition();
+            screenshotNormal = { size, position };
+            const monitor = await currentMonitor() ?? await primaryMonitor();
+            const pill = getTheme() === "mosaic";
+            const w = pill ? 304 : 360;
+            const h = pill ? 64 : 200;
+            const mx = monitor?.position.x ?? 0;
+            const my = monitor?.position.y ?? 0;
+            const mw = monitor?.size.width ?? 0;
+            const mh = monitor?.size.height ?? 0;
+            const scale = monitor?.scaleFactor ?? 1;
+            const x = mx + mw - (w + 16) * scale;
+            const y = my + mh - (h + 48) * scale;
+            await appWindow.setMinSize(new LogicalSize(w, h));
+            await appWindow.setSize(new LogicalSize(w, h));
+            await appWindow.setPosition(new PhysicalPosition(x, y));
+            await appWindow.setAlwaysOnTop(true);
+          }
         }
       } catch (error) {
         console.error("[mosaic] tuck failed", error);
@@ -280,6 +306,7 @@ export default function App() {
   }
 
   function addWorkspace(ws: Workspace) {
+    setView("workspace");
     setWorkspaces((prev) => [...prev, ws]);
     setActiveId(ws.id);
   }
@@ -382,7 +409,27 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-view={view} data-tucked={tucked || undefined}>
+      {theme === "mosaic" && <GlassGround />}
+      {tucked && (() => {
+        const metas = Object.values(tabMeta);
+        const working = metas.filter((m) => m.status === "running").length;
+        const waiting = metas.filter((m) => m.status === "attention").length;
+        return (
+          <button
+            className="tucked-pill"
+            data-pane-status={waiting ? "attention" : working ? "running" : "idle"}
+            onClick={() => screenshotToggleRef.current()}
+            title="Bring Mosaic back (⌘⇧S)"
+          >
+            <img src="/textures/glass-art/icon.png" alt="" className="tucked-mark" />
+            <span className="tucked-name">mosaic</span>
+            {working > 0 && <span className="tucked-count tucked-working">{working}</span>}
+            {waiting > 0 && <span className="tucked-count tucked-waiting">{waiting}</span>}
+            <Icon name="restore" size={16} />
+          </button>
+        );
+      })()}
       <Sidebar
         workspaces={workspaces}
         activeId={activeId}
@@ -408,16 +455,17 @@ export default function App() {
           workspaces={workspaces}
           tabMeta={tabMeta}
           onOpenWorkspace={(id) => { setActiveId(id); setView("workspace"); }}
+          onToggleScreenshot={() => screenshotToggleRef.current()}
         />
       )}
       {view === "about" && <AboutView />}
       {view === "help" && <HelpView />}
       {view === "settings" && <SettingsView />}
-      {view === "commands" && <CommandsView />}
-      {fieldnotesOpened && <FieldnotesView visible={view === "fieldnotes"} />}
+      {view === "commands" && <CommandsView onToggleScreenshot={() => screenshotToggleRef.current()} />}
+      {fieldnotesOpened && <FieldnotesView visible={view === "fieldnotes"} onToggleScreenshot={() => screenshotToggleRef.current()} />}
 
-      {/* Keep all workspace grids mounted so terminals never restart */}
-      {workspaces.map((ws) => (
+      {/* Mount workspaces lazily on first visit, then keep visited grids mounted so terminals never restart */}
+      {workspaces.filter((ws) => mountedWorkspaces.has(ws.id)).map((ws) => (
         <div
           key={ws.id}
           style={{ display: view === "workspace" && ws.id === activeId ? "contents" : "none" }}

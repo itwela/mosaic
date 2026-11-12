@@ -22,6 +22,36 @@ fn data_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
+pub fn fieldnotes_load_client_source() -> Result<Option<Vec<String>>, String> {
+    // The installed app follows the local data source it was built from. No
+    // Node process, publish command, or app rebuild is needed for data edits.
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../public/fieldnotes");
+    let names = ["workstreams-data.js", "my-clients.js"];
+    if names.iter().any(|name| !dir.join(name).exists()) {
+        return Ok(None);
+    }
+    names.iter().map(|name| fs::read_to_string(dir.join(name))
+        .map_err(|error| error.to_string())).collect::<Result<Vec<_>, _>>().map(Some)
+}
+
+#[tauri::command]
+pub fn fieldnotes_load_clients(app: AppHandle) -> Result<Option<Value>, String> {
+    let path = data_dir(&app)?.join("clients.json");
+    match fs::read_to_string(path) {
+        Ok(contents) => {
+            let clients: Value = serde_json::from_str(&contents).map_err(|error| error.to_string())?;
+            if !clients.is_array() {
+                return Err("Field notes clients must be an array".into());
+            }
+            Ok(Some(clients))
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+#[tauri::command]
 pub fn fieldnotes_load_state(app: AppHandle) -> Result<Value, String> {
     let path = data_dir(&app)?.join("checklists.json");
     match fs::read_to_string(path) {
