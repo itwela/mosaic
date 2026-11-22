@@ -8,6 +8,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import "@xterm/xterm/css/xterm.css";
 import { detectScreenState, notificationState } from "../lib/agents";
 import { quoteForShell } from "../lib/screenshotDrag";
+import { setLastTerminal } from "../store/tasks";
 
 interface Props {
   id: string;
@@ -170,6 +171,7 @@ const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ id, activ
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(containerRef.current);
+    term.textarea?.addEventListener("focus", () => setLastTerminal(id));
     const home = containerRef.current;
 
     // FitAddon measures the terminal's parent with getComputedStyle. Under a

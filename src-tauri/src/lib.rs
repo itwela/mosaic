@@ -1,4 +1,5 @@
 mod setup;
+mod voice;
 mod agents;
 mod fieldnotes;
 mod pty;
@@ -329,9 +330,19 @@ pub fn run() {
                     Err(e) => eprintln!("[mosaic] failed to register global shortcut {}: {}", SCREENSHOT_SHORTCUT, e),
                 }
             }
+            voice::start(app.handle());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![setup::setup_identity, setup::setup_folders, setup::setup_disk_access, setup::setup_open_disk_settings, setup::setup_codex_enabled, setup::setup_enable_codex, pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, open_privacy_settings, set_window_tucked, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, agents::antigravity_login, agents::claude_web_login, agents::claude_resets, fieldnotes::fieldnotes_load_client_source, fieldnotes::fieldnotes_load_clients, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .invoke_handler(tauri::generate_handler![voice::voice_meetings, voice::voice_meeting, voice::voice_delete_meeting, voice::voice_notes, voice::voice_clients, voice::voice_set_meeting_client, voice::voice_permission, setup::setup_identity, setup::setup_folders, setup::setup_disk_access, setup::setup_open_disk_settings, setup::setup_codex_enabled, setup::setup_enable_codex, pty_create, pty_write, pty_resize, pty_kill, list_applications, open_path, open_privacy_settings, set_window_tucked, get_file_preview, read_file_for_export, restore_exported_file, pty_statuses, screenshots::list_screenshots, screenshots::screenshot_thumbnail, agents::agent_hooks_installed, agents::install_agent_hooks, agents::provider_usage, agents::set_provider_key, agents::antigravity_login, agents::claude_web_login, agents::claude_resets, fieldnotes::fieldnotes_load_client_source, fieldnotes::fieldnotes_load_clients, fieldnotes::fieldnotes_load_state, fieldnotes::fieldnotes_save_state, fieldnotes::fieldnotes_import_screenshot, fieldnotes::fieldnotes_save_screenshot_data, fieldnotes::fieldnotes_read_screenshot, fieldnotes::fieldnotes_remove_screenshot, fieldnotes::fieldnotes_write_export, fieldnotes::fieldnotes_write_pdf])
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            // llama.cpp's Metal backend aborts in its static destructors if the model is still
+            // loaded when the process exits, which macOS reports as "quit unexpectedly".
+            // Everything we need is saved by now, so leave without running C++ destructors.
+            if let tauri::RunEvent::Exit = event {
+                unsafe extern "C" { fn _exit(code: i32) -> !; }
+                unsafe { _exit(0) }
+            }
+        });
 }

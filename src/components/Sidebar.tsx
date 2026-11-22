@@ -55,6 +55,7 @@ interface Props {
   onAbout: () => void;
   onCommands: () => void;
   onFieldnotes: () => void;
+  onMeetings: () => void;
   onAllRunning: () => void;
 }
 
@@ -75,6 +76,7 @@ export default function Sidebar({
   onAbout,
   onCommands,
   onFieldnotes,
+  onMeetings,
   onAllRunning,
 }: Props) {
   const [userCollapsed, setCollapsed] = useState(() => localStorage.getItem("mosaic-sidebar-collapsed") === "true");
@@ -366,6 +368,18 @@ export default function Sidebar({
           <path d="M8 12l2.5 2.5L16 9" />
         </svg>
         <span className="sidebar-action-label">Field notes</span>
+      </button>
+
+      <button
+        className={`commands-nav-btn ${view === "meetings" ? "commands-nav-active" : ""}`}
+        onClick={onMeetings}
+        title="Meetings · notes from your calls"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3" />
+          <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+        </svg>
+        <span className="sidebar-action-label">Meetings</span>
       </button>
 
       <button className="add-workspace-btn" onClick={handleAdd}>

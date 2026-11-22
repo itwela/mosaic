@@ -12,6 +12,8 @@ import SettingsView from "./components/SettingsView";
 import CommandsView from "./components/CommandsView";
 import AllRunningView from "./components/AllRunningView";
 import FieldnotesView from "./components/FieldnotesView";
+import MeetingsView from "./components/MeetingsView";
+import { listen as listenVoice } from "@tauri-apps/api/event";
 import UndoToast from "./components/UndoToast";
 import GlassGround from "./components/GlassGround";
 import Icon from "./components/Icon";
@@ -21,12 +23,13 @@ import { sessionToMeta, SessionStatus, TabMeta, AgentScreenState, TabSignals } f
 import { createWorkspaceBundle, EmbeddedFile, loadWorkspaces, parseWorkspaceBundle, saveWorkspaces, setWorkspaceMutator } from "./store/workspaces";
 import { insertAt, pushUndo } from "./store/undo";
 import { recordCommand } from "./store/commands";
+import { getLastTerminal } from "./store/tasks";
 import "./App.css";
 import "./luxury.css";
 import "./themes/glass.css";
 import "./themes/aero.css";
 
-type View = "workspace" | "all" | "about" | "help" | "settings" | "commands" | "fieldnotes";
+type View = "workspace" | "all" | "about" | "help" | "settings" | "commands" | "fieldnotes" | "meetings";
 
 const STATUS_POLL_MS = 2000;
 
@@ -47,6 +50,11 @@ export default function App() {
   // Field notes stays mounted after its first open so switching back is instant.
   const [fieldnotesOpened, setFieldnotesOpened] = useState(false);
   useEffect(() => { if (view === "fieldnotes") setFieldnotesOpened(true); }, [view]);
+  const [openMeeting, setOpenMeeting] = useState<string | null>(null);
+  useEffect(() => {
+    const u = listenVoice<{ id: string }>("voice-open-meeting", (e) => { setOpenMeeting(e.payload.id); setView("meetings"); });
+    return () => { u.then((f) => f()); };
+  }, []);
   const [tabMeta, setTabMeta] = useState<Record<string, TabMeta>>({});
   const screenshotToggleRef = useRef<() => void>(() => {});
   // True while the window is tucked into its corner pill.
@@ -301,6 +309,21 @@ export default function App() {
     return map;
   }, [workspaces, tabMeta]);
 
+  // Commands → Tasks "Run": jump to the terminal last typed in and send the script.
+  useEffect(() => {
+    const run = (event: Event) => {
+      const { data, done } = (event as CustomEvent<{ data: string; done: (ok: boolean) => void }>).detail;
+      const termId = getLastTerminal();
+      const ws = termId ? workspaces.find((w) => w.panels.some((p) => p.tabs.some((t) => t.id === termId))) : undefined;
+      if (!termId || !ws) { done(false); return; }
+      setActiveId(ws.id);
+      setView("workspace");
+      invoke("pty_write", { id: termId, data: `${data}\r` }).then(() => done(true), () => done(false));
+    };
+    window.addEventListener("mosaic-run-task", run);
+    return () => window.removeEventListener("mosaic-run-task", run);
+  }, [workspaces]);
+
   function updateWorkspace(updated: Workspace) {
     setWorkspaces((ws) => ws.map((w) => (w.id === updated.id ? updated : w)));
   }
@@ -448,6 +471,7 @@ export default function App() {
         onSettings={() => toggleView("settings")}
         onCommands={() => toggleView("commands")}
         onFieldnotes={() => toggleView("fieldnotes")}
+        onMeetings={() => toggleView("meetings")}
         onAllRunning={() => setView("all")}
       />
       {view === "all" && (
@@ -462,6 +486,7 @@ export default function App() {
       {view === "help" && <HelpView />}
       {view === "settings" && <SettingsView />}
       {view === "commands" && <CommandsView onToggleScreenshot={() => screenshotToggleRef.current()} />}
+      <MeetingsView visible={view === "meetings"} openId={openMeeting} />
       {fieldnotesOpened && <FieldnotesView visible={view === "fieldnotes"} onToggleScreenshot={() => screenshotToggleRef.current()} />}
 
       {/* Mount workspaces lazily on first visit, then keep visited grids mounted so terminals never restart */}

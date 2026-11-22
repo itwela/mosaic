@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import FirstRun from "./components/FirstRun";
 import GlassGround from "./components/GlassGround";
+import "./components/Boot.css";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyTheme } from "./lib/theme";
@@ -19,7 +20,8 @@ function MosaicRoot() {
   const preview = import.meta.env.DEV && !isTauri();
   const forceSetup = preview && params.has("setup");
   const previewStartup = preview && params.has("startup");
-  const [checking, setChecking] = useState(!preview || previewStartup);
+  const previewBoot = import.meta.env.DEV && params.has("boot"); // dev: hold the loading screen
+  const [checking, setChecking] = useState(!preview || previewStartup || previewBoot);
   const [setup, setSetup] = useState(forceSetup);
   const [entered, setEntered] = useState(preview && !forceSetup && !previewStartup);
   const [identity, setIdentity] = useState("");
@@ -27,7 +29,7 @@ function MosaicRoot() {
   const [rechecking, setRechecking] = useState(false);
 
   useEffect(() => {
-    if (preview && !previewStartup) return;
+    if (previewBoot || (preview && !previewStartup)) return;
     let active = true;
     void invoke<string>("setup_identity").then(current => {
       if (!current) throw new Error("App identity was empty.");
@@ -60,10 +62,16 @@ function MosaicRoot() {
     setEntered(true); setSetup(false);
   }
 
-  if (checking || error) return <div className="first-run"><GlassGround /><section className="setup-sheet" role="status">
-    <h1>{error ? "Mosaic could not check setup" : "Opening Mosaic…"}</h1>
-    {error && <><p className="setup-error">{error}</p><button onClick={() => location.reload()}>Try again</button></>}
-  </section></div>;
+  if (checking || error) return <div className="boot" role="status" aria-live="polite">
+    <GlassGround origin="center" />
+    <div className="boot-mark">
+      <img className="boot-icon" src="/textures/glass-art/icon.png" alt="" />
+      <div className="boot-word">mosaic</div>
+      {error
+        ? <><p className="boot-error">Mosaic could not check setup. {error}</p><button className="boot-retry" onClick={() => location.reload()}>Try again</button></>
+        : <div className="boot-line" aria-label="Opening Mosaic"><span /></div>}
+    </div>
+  </div>;
 
   return <>
     {entered && <div style={{ display: setup ? "none" : "contents" }}><App /></div>}

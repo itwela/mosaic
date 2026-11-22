@@ -13,6 +13,7 @@ import {
   useCommandDb,
 } from "../store/commands";
 import Icon from "./Icon";
+import CommandTasks from "./CommandTasks";
 import "./CommandsView.css";
 
 // The glass each heat level is cut from in the Mosaic theme.
@@ -177,6 +178,8 @@ export default function CommandsView({ onClose, onToggleScreenshot }: Props = {}
             <button className="commands-add-btn" type="submit" disabled={!newText.trim()}>Save</button>
           </form>
         )}
+
+        <CommandTasks />
 
         <div className="commands-toolbar">
           <div className="commands-search-wrap">

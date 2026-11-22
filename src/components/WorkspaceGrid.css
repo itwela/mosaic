@@ -239,7 +239,8 @@
 /* compact window */
 .compact-only { display: none !important; }
 .grid-summary i { font-style: normal; }
-.grid-body-stack { display: flex; flex-direction: column; overflow-y: auto; }
+/* min-height: 0 lets the stack scroll instead of growing past the window (which hid the resize handle) */
+.grid-body-stack { display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
 .grid-body-stack > .panel-container { flex: none; height: 300px; }
 .grid-body-stack > .panel-container[data-pane-type="launcher"],
 .grid-body-stack > .panel-container[data-pane-type="usage"] { height: 260px; }

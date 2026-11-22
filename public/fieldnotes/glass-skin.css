@@ -373,3 +373,10 @@
   .group-title, .workstream[data-complete="true"] .group-title { white-space: normal; }
  }
 }
+
+/* Rows read as separate items: tile pinned to the title line, a hairline between rows. */
+:root:not([data-theme="aero"]) {
+  .item { align-items: start; padding: 10px 0; border-bottom: 1px solid var(--hair) !important; }
+  .status-button, .status-button[data-state] { margin-top: 3px; }
+  .item-main { row-gap: 6px; }
+}

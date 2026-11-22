@@ -8,5 +8,11 @@
 	<string>Mosaic needs Documents access when an agent or launcher opens files there. Allow access for this build of Mosaic.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Mosaic needs Downloads access when an agent or launcher opens files there. Allow access for this build of Mosaic.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mosaic listens while you hold fn to dictate, and during meetings you choose to take notes in. Audio stays on this Mac and is never saved.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Mosaic hears the other people in a meeting you choose to take notes in. Audio stays on this Mac and is never saved.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Mosaic turns your speech into text on this Mac.</string>
 </dict>
 </plist>

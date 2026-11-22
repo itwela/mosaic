@@ -72,7 +72,7 @@ type RippleRequest = { x: number; y: number; tint?: string };
 const rippleListeners = new Set<(r: RippleRequest) => void>();
 export function glassRipple(r: RippleRequest) { rippleListeners.forEach((fn) => fn(r)); }
 
-export default function GlassGround() {
+export default function GlassGround({ origin = "logo" }: { origin?: "logo" | "center" } = {}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -260,7 +260,9 @@ export default function GlassGround() {
 
       // opening: the window lights from the logo outward
       const t0 = performance.now();
-      if (!reduce) for (let i = 0; i < N; i++) delay[i] = t0 + Math.hypot(cx[i] - 40, cy[i] - 70) * 0.75 + Math.random() * 160;
+      // the boot screen lights from its centred logo; the app from the sidebar logo
+      const ox = origin === "center" ? W / 2 / cover : 40, oy = origin === "center" ? H / 2 / cover : 70;
+      if (!reduce) for (let i = 0; i < N; i++) delay[i] = t0 + Math.hypot(cx[i] - ox, cy[i] - oy) * 0.75 + Math.random() * 160;
       const openUntil = t0 + 2600;
       const opening = new Float32Array(N); // base brightness fades in during the opening
       if (reduce) opening.fill(1);

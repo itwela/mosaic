@@ -358,3 +358,42 @@
 
 /* pieces the Mosaic glass theme turns on */
 .commands-view > .page-bar, .commands-sub-glass, .commands-meter, .commands-cat-count, .commands-copy-btn .ic { display: none; }
+
+/* ── Command tasks ─────────────────────────────── */
+.tasks-section { margin: 18px 0 22px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.tasks-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.tasks-sub { margin: 4px 0 0; font-size: 12px; color: var(--cream-dim); }
+.tasks-empty { font-size: 12px; color: var(--cream-dim); padding: 6px 0; }
+.tasks-list { display: flex; flex-direction: column; gap: 8px; }
+.task-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.task-card-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.task-toggle { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; background: none; border: none; color: var(--cream); cursor: pointer; text-align: left; padding: 4px 0; font-size: 13px; }
+.task-caret { color: var(--cream-dim); width: 10px; }
+.task-name { font-weight: 600; }
+.task-card-actions { display: flex; gap: 6px; align-items: center; }
+.task-flash { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
+.task-steps, .task-edit-steps { list-style: none; margin: 10px 0 2px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.task-step { display: flex; gap: 10px; align-items: flex-start; }
+.task-step-done .task-step-body { opacity: 0.45; }
+.task-step-check, .task-step-num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--cream-dim); font-size: 11px; display: grid; place-items: center; cursor: pointer; }
+.task-step-done .task-step-check { color: var(--cream); border-color: var(--cream-dim); }
+.task-step-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.task-step-note { font-size: 12px; color: var(--cream-dim); }
+.task-step-body .commands-item-text { white-space: pre-wrap; }
+.task-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+.task-editor input, .task-editor textarea { background: var(--surface, transparent); border: 1px solid var(--border); border-radius: 6px; color: var(--cream); padding: 7px 9px; font-size: 13px; width: 100%; box-sizing: border-box; resize: vertical; }
+.task-name-input { font-weight: 600; }
+.task-paste { display: flex; gap: 8px; align-items: flex-start; }
+.task-paste textarea { font-size: 12px; }
+.task-edit-step { display: flex; gap: 10px; align-items: flex-start; }
+.task-edit-fields { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.task-edit-command { font-family: var(--mono, monospace); }
+.task-edit-step-actions { display: flex; gap: 2px; }
+.task-edit-step-actions button { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--cream-dim); cursor: pointer; width: 24px; height: 24px; }
+.task-editor-actions { display: flex; gap: 8px; align-items: center; }
+/* Theme-proof task buttons and multi-line steps (glass theme fixes widths/heights). */
+.commands-view .tasks-section .commands-add-btn,
+.commands-view .tasks-section .commands-copy-btn { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; width: auto !important; min-width: 0; height: 30px; padding: 0 12px !important; margin: 0 !important; white-space: nowrap; flex: none; }
+.commands-view .tasks-section .commands-add-btn .ic,
+.commands-view .tasks-section .commands-copy-btn .ic { display: block !important; }
+.commands-view .tasks-section .task-step-body .commands-item-text { height: auto !important; white-space: pre-wrap !important; line-height: 1.6 !important; padding: 6px 10px !important; overflow: visible; }

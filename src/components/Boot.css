@@ -1,0 +1,27 @@
+/* Loading screen: the glass lights outward from the logo in the middle. */
+.boot { position: fixed; inset: 0; display: grid; place-items: center; background: #0e0b09; color: #f4eee4; z-index: 100; overflow: hidden; }
+.boot-mark { position: relative; display: flex; flex-direction: column; align-items: center; padding: 72px 96px; }
+/* a soft pool of lead behind the mark, fading out on every side, so the logo reads on bright glass */
+.boot-mark::before { content: ""; position: absolute; left: 50%; top: 50%; width: 640px; height: 520px; translate: -50% -50%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(11,10,9,.94), rgba(11,10,9,.86) 38%, rgba(11,10,9,.5) 68%, rgba(11,10,9,0));
+  animation: boot-in .9s ease-out both; }
+.boot-icon { width: 96px; height: 96px; filter: drop-shadow(0 6px 18px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(255,190,110,.18));
+  animation: boot-rise .9s cubic-bezier(.2,.7,.2,1) both; }
+.boot-word { margin-top: 18px; font: 600 40px/1 var(--font-display, "Fraunces Soft", serif); letter-spacing: -.6px; text-shadow: 0 2px 14px rgba(0,0,0,.6);
+  animation: boot-rise .9s .12s cubic-bezier(.2,.7,.2,1) both; }
+/* a lead came line with light travelling along it */
+.boot-line { position: relative; width: 132px; height: 2px; margin-top: 26px; border-radius: 1px; background: rgba(244,238,228,.16); overflow: hidden;
+  animation: boot-in .9s .3s ease-out both; }
+.boot-line span { position: absolute; inset: 0; width: 46px; border-radius: 1px;
+  background: linear-gradient(90deg, rgba(255,203,98,0), #FFCB62 50%, rgba(255,203,98,0));
+  animation: boot-sweep 1.8s .5s ease-in-out infinite both; }
+.boot-error { max-width: 420px; margin: 24px 0 14px; text-align: center; font: 400 13px/1.5 var(--font-body, "DM Sans", sans-serif); color: #e8a597; }
+.boot-retry { padding: 8px 14px; border: 1px solid #ffffff26; border-radius: 4px; background: #ffffff12; color: #f4eee4; font: 500 13px var(--font-body, "DM Sans", sans-serif); cursor: pointer; }
+.boot-retry:hover { background: #ffffff24; }
+@keyframes boot-in { from { opacity: 0; } }
+@keyframes boot-rise { from { opacity: 0; transform: translateY(6px) scale(.97); } }
+@keyframes boot-sweep { from { transform: translateX(-46px); } to { transform: translateX(132px); } }
+@media (prefers-reduced-motion: reduce) {
+  .boot-mark::before, .boot-icon, .boot-word, .boot-line { animation: none; }
+  .boot-line span { animation: none; left: 43px; }
+}

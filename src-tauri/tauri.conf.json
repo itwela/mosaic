@@ -44,7 +44,12 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "infoPlist": "Info.plist"
-    }
+      "infoPlist": "Info.plist",
+      "minimumSystemVersion": "13.0",
+      "entitlements": "Entitlements.plist"
+    },
+    "externalBin": [
+      "binaries/mosaic-voice"
+    ]
   }
 }
